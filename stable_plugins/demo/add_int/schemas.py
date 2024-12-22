@@ -11,13 +11,23 @@ class DemoResponseSchema(MaBaseSchema):
     identifier = ma.fields.String(required=True, allow_none=False, dump_only=True)
 
 
-class HelloWorldParametersSchema(FrontendFormBaseSchema):
-    input_str = ma.fields.String(
+class AddIntParametersSchema(FrontendFormBaseSchema):
+    input_int1 = ma.fields.Integer(
         required=True,
         allow_none=False,
         metadata={
-            "label": "Input String",
-            "description": "A simple string input.",
-            "input_type": "textarea",
+            "label": "First Integer Input",
+            "description": "Enter the first integer.",
+            "input_type": "number",
         },
     )
+    input_int2 = ma.fields.Integer(
+        required=True,
+        allow_none=False,
+        metadata={
+            "label": "Second Integer Input",
+            "description": "Enter the second integer.",
+            "input_type": "number",
+        },
+    )
+    

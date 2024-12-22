@@ -26,7 +26,7 @@ from qhana_plugin_runner.tasks import (
 )
 
 from . import HELLO_MULTI_BLP, HelloWorldMultiStep
-from .schemas import HelloWorldParametersSchema
+from .schemas import AddIntParametersSchema
 from .tasks import preprocessing_task, processing_task
 
 
@@ -59,14 +59,15 @@ class MicroFrontend(MethodView):
     """Micro frontend for the hello world plugin."""
 
     example_inputs = {
-        "inputStr": "Test.",
+        "input_int1": 1,
+        "input_int2": 2
     }
 
     @HELLO_MULTI_BLP.html_response(
         HTTPStatus.OK, description="Micro frontend of the hello world plugin."
     )
     @HELLO_MULTI_BLP.arguments(
-        HelloWorldParametersSchema(
+        AddIntParametersSchema(
             partial=True, unknown=EXCLUDE, validate_errors_as_result=True
         ),
         location="query",
@@ -81,7 +82,7 @@ class MicroFrontend(MethodView):
         HTTPStatus.OK, description="Micro frontend of the hello world plugin."
     )
     @HELLO_MULTI_BLP.arguments(
-        HelloWorldParametersSchema(
+        AddIntParametersSchema(
             partial=True, unknown=EXCLUDE, validate_errors_as_result=True
         ),
         location="form",
@@ -93,7 +94,7 @@ class MicroFrontend(MethodView):
         return self.render(request.form, errors, not errors)
 
     def render(self, data: Mapping, errors: dict, valid: bool):
-        schema = HelloWorldParametersSchema()
+        schema = AddIntParametersSchema()
         return Response(
             render_template(
                 "simple_template.html",
@@ -120,7 +121,7 @@ class ProcessView(MethodView):
     """Start a long running processing task."""
 
     @HELLO_MULTI_BLP.arguments(
-        HelloWorldParametersSchema(unknown=EXCLUDE), location="form"
+        AddIntParametersSchema(unknown=EXCLUDE), location="form"
     )
     @HELLO_MULTI_BLP.response(HTTPStatus.SEE_OTHER)
     @HELLO_MULTI_BLP.require_jwt("jwt", optional=True)
@@ -139,7 +140,7 @@ class ProcessView(MethodView):
         ui_href = url_for(
             f"{HELLO_MULTI_BLP.name}.DemoStepFrontend", db_id=db_task.id, _external=True
         )
-
+        print("lolol")
         # all tasks need to know about db id to load the db entry
         task: chain = preprocessing_task.s(db_id=db_task.id) | add_step.s(
             db_id=db_task.id, step_id=step_id, href=href, ui_href=ui_href, prog_value=50
@@ -166,7 +167,7 @@ class DemoStepFrontend(MethodView):
         HTTPStatus.OK, description="Micro frontend of the hello world plugin."
     )
     @HELLO_MULTI_BLP.arguments(
-        HelloWorldParametersSchema(
+        AddIntParametersSchema(
             partial=True, unknown=EXCLUDE, validate_errors_as_result=True
         ),
         location="query",
@@ -181,7 +182,7 @@ class DemoStepFrontend(MethodView):
         HTTPStatus.OK, description="Micro frontend of the hello world plugin."
     )
     @HELLO_MULTI_BLP.arguments(
-        HelloWorldParametersSchema(
+        AddIntParametersSchema(
             partial=True, unknown=EXCLUDE, validate_errors_as_result=True
         ),
         location="form",
@@ -207,7 +208,7 @@ class DemoStepFrontend(MethodView):
                 input_str = ""
             data = {"inputStr": "Input from preprocessing: " + input_str}
 
-        schema = HelloWorldParametersSchema()
+        schema = AddIntParametersSchema()
         return Response(
             render_template(
                 "simple_template.html",
@@ -232,7 +233,7 @@ class DemoStepView(MethodView):
     """Start a long running processing task."""
 
     @HELLO_MULTI_BLP.arguments(
-        HelloWorldParametersSchema(unknown=EXCLUDE), location="form"
+        AddIntParametersSchema(unknown=EXCLUDE), location="form"
     )
     @HELLO_MULTI_BLP.response(HTTPStatus.SEE_OTHER)
     @HELLO_MULTI_BLP.require_jwt("jwt", optional=True)
