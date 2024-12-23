@@ -1,4 +1,4 @@
-# Copyright 2021 QHAna plugin runner contributors.
+# Copyright 2022 QHAna plugin runner contributors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,11 +15,8 @@
 from typing import Optional
 from flask import Flask
 
-from qhana_plugin_runner.util.plugins import QHAnaPluginBase, plugin_identifier
-
-from qhana_plugin_runner.api.util import (
-    SecurityBlueprint,
-)
+from qhana_plugin_runner.api.util import SecurityBlueprint
+from qhana_plugin_runner.util.plugins import plugin_identifier, QHAnaPluginBase
 
 _plugin_name = "orthogonality_classical_state_analysis"
 __version__ = "v0.0.1"
