@@ -26,19 +26,19 @@ from qhana_plugin_runner.tasks import (
     save_task_result,
 )
 
-from . import HELLO_BLP, HelloWorld
+from . import CLASSICAL_ANALYSIS_ORTHOGONALITY_BLP, ClassicalStateAnalysisOrthogonality
 from .schemas import HelloWorldParametersSchema
 from .tasks import demo_task
 
-@HELLO_BLP.route("/")
+@CLASSICAL_ANALYSIS_ORTHOGONALITY_BLP.route("/")
 class PluginsView(MethodView):
     """Plugins collection resource."""
 
-    @HELLO_BLP.response(HTTPStatus.OK, PluginMetadataSchema())
-    @HELLO_BLP.require_jwt("jwt", optional=True)
+    @CLASSICAL_ANALYSIS_ORTHOGONALITY_BLP.response(HTTPStatus.OK, PluginMetadataSchema())
+    @CLASSICAL_ANALYSIS_ORTHOGONALITY_BLP.require_jwt("jwt", optional=True)
     def get(self):
         """Endpoint returning the plugin metadata."""
-        plugin = HelloWorld.instance
+        plugin = ClassicalStateAnalysisOrthogonality.instance
         if plugin is None:
             abort(HTTPStatus.INTERNAL_SERVER_ERROR)
         return PluginMetadata(
@@ -48,8 +48,8 @@ class PluginsView(MethodView):
             version=plugin.version,
             type=PluginType.processing,
             entry_point=EntryPoint(
-                href=url_for(f"{HELLO_BLP.name}.ProcessView"),
-                ui_href=url_for(f"{HELLO_BLP.name}.MicroFrontend"),
+                href=url_for(f"{CLASSICAL_ANALYSIS_ORTHOGONALITY_BLP.name}.ProcessView"),
+                ui_href=url_for(f"{CLASSICAL_ANALYSIS_ORTHOGONALITY_BLP.name}.MicroFrontend"),
                 plugin_dependencies=[],
                 data_input=[],
                 data_output=[
@@ -60,11 +60,11 @@ class PluginsView(MethodView):
                     )
                 ],
             ),
-            tags=HelloWorld.instance.tags,
+            tags=ClassicalStateAnalysisOrthogonality.instance.tags,
         )
 
 
-@HELLO_BLP.route("/ui/")
+@CLASSICAL_ANALYSIS_ORTHOGONALITY_BLP.route("/ui/")
 class MicroFrontend(MethodView):
     """Micro frontend for the hello world plugin."""
 
@@ -72,38 +72,38 @@ class MicroFrontend(MethodView):
         "inputStr": "Sample input string.",
     }
 
-    @HELLO_BLP.html_response(
+    @CLASSICAL_ANALYSIS_ORTHOGONALITY_BLP.html_response(
         HTTPStatus.OK, description="Micro frontend of the hello world plugin."
     )
-    @HELLO_BLP.arguments(
+    @CLASSICAL_ANALYSIS_ORTHOGONALITY_BLP.arguments(
         HelloWorldParametersSchema(
             partial=True, unknown=EXCLUDE, validate_errors_as_result=True
         ),
         location="query",
         required=False,
     )
-    @HELLO_BLP.require_jwt("jwt", optional=True)
+    @CLASSICAL_ANALYSIS_ORTHOGONALITY_BLP.require_jwt("jwt", optional=True)
     def get(self, errors):
         """Return the micro frontend."""
         return self.render(request.args, errors, False)
 
-    @HELLO_BLP.html_response(
+    @CLASSICAL_ANALYSIS_ORTHOGONALITY_BLP.html_response(
         HTTPStatus.OK, description="Micro frontend of the hello world plugin."
     )
-    @HELLO_BLP.arguments(
+    @CLASSICAL_ANALYSIS_ORTHOGONALITY_BLP.arguments(
         HelloWorldParametersSchema(
             partial=True, unknown=EXCLUDE, validate_errors_as_result=True
         ),
         location="form",
         required=False,
     )
-    @HELLO_BLP.require_jwt("jwt", optional=True)
+    @CLASSICAL_ANALYSIS_ORTHOGONALITY_BLP.require_jwt("jwt", optional=True)
     def post(self, errors):
         """Return the micro frontend with prerendered inputs."""
         return self.render(request.form, errors, not errors)
 
     def render(self, data: Mapping, errors: dict, valid: bool):
-        plugin = HelloWorld.instance
+        plugin = ClassicalStateAnalysisOrthogonality.instance
         if plugin is None:
             abort(HTTPStatus.INTERNAL_SERVER_ERROR)
         schema = HelloWorldParametersSchema()
@@ -116,22 +116,22 @@ class MicroFrontend(MethodView):
                 valid=valid,
                 values=data,
                 errors=errors,
-                process=url_for(f"{HELLO_BLP.name}.ProcessView"),
+                process=url_for(f"{CLASSICAL_ANALYSIS_ORTHOGONALITY_BLP.name}.ProcessView"),
                 help_text="This is an example help text with basic **Markdown** support.",
                 example_values=url_for(
-                    f"{HELLO_BLP.name}.MicroFrontend", **self.example_inputs
+                    f"{CLASSICAL_ANALYSIS_ORTHOGONALITY_BLP.name}.MicroFrontend", **self.example_inputs
                 ),
             )
         )
 
 
-@HELLO_BLP.route("/process/")
+@CLASSICAL_ANALYSIS_ORTHOGONALITY_BLP.route("/process/")
 class ProcessView(MethodView):
     """Start a long running processing task."""
 
-    @HELLO_BLP.arguments(HelloWorldParametersSchema(unknown=EXCLUDE), location="form")
-    @HELLO_BLP.response(HTTPStatus.SEE_OTHER)
-    @HELLO_BLP.require_jwt("jwt", optional=True)
+    @CLASSICAL_ANALYSIS_ORTHOGONALITY_BLP.arguments(HelloWorldParametersSchema(unknown=EXCLUDE), location="form")
+    @CLASSICAL_ANALYSIS_ORTHOGONALITY_BLP.response(HTTPStatus.SEE_OTHER)
+    @CLASSICAL_ANALYSIS_ORTHOGONALITY_BLP.require_jwt("jwt", optional=True)
     def post(self, arguments):
         """Start the demo task."""
         db_task = ProcessingTask(task_name=demo_task.name, parameters=dumps(arguments))

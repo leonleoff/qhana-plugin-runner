@@ -21,29 +21,28 @@ from qhana_plugin_runner.api.util import (
     SecurityBlueprint,
 )
 
-_plugin_name = "orthogonality"
-__version__ = "v0.0.0"
+_plugin_name = "orthogonality_classical_state_analysis"
+__version__ = "v0.0.1"
 _identifier = plugin_identifier(_plugin_name, __version__)
 
-
-HELLO_BLP = SecurityBlueprint(
+CLASSICAL_ANALYSIS_ORTHOGONALITY_BLP = SecurityBlueprint(
     _identifier,  # blueprint name
     __name__,  # module import name!
-    description="Demo plugin API.",
-    template_folder="hello_world_templates",
+    description="Classical state analysis plugin API.",
+    template_folder="classical_state_templates",
 )
 
-class HelloWorld(QHAnaPluginBase):
+class ClassicalStateAnalysisOrthogonality(QHAnaPluginBase):
     name = _plugin_name
     version = __version__
-    description = "Tests the connection of all components by printing some text."
-    tags = ["hello-world"]
+    description = "Analyzes if two classical state vectors are orthogonal."
+    tags = ["classical-state-analysis", "orthogonality"]
 
     def __init__(self, app: Optional[Flask]) -> None:
         super().__init__(app)
 
     def get_api_blueprint(self):
-        return HELLO_BLP
+        return CLASSICAL_ANALYSIS_ORTHOGONALITY_BLP
 
 try:
     # It is important to import the routes **after** COSTUME_LOADER_BLP and CostumeLoader are defined, because they are
