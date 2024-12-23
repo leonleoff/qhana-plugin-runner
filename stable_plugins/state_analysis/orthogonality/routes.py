@@ -27,8 +27,8 @@ from qhana_plugin_runner.tasks import (
 )
 
 from . import CLASSICAL_ANALYSIS_ORTHOGONALITY_BLP, ClassicalStateAnalysisOrthogonality
-from .schemas import HelloWorldParametersSchema
-from .tasks import demo_task
+from .schemas import ClassicalStateAnalysisOrthogonalityParametersSchema
+from .tasks import orthogonality_task
 
 @CLASSICAL_ANALYSIS_ORTHOGONALITY_BLP.route("/")
 class PluginsView(MethodView):
@@ -51,11 +51,17 @@ class PluginsView(MethodView):
                 href=url_for(f"{CLASSICAL_ANALYSIS_ORTHOGONALITY_BLP.name}.ProcessView"),
                 ui_href=url_for(f"{CLASSICAL_ANALYSIS_ORTHOGONALITY_BLP.name}.MicroFrontend"),
                 plugin_dependencies=[],
-                data_input=[],
+                data_input=[
+                    DataMetadata(
+                        data_type="application/json",
+                        content_type=["application/json"],
+                        required=True,
+                    )
+                ],
                 data_output=[
                     DataMetadata(
-                        data_type="custom/hello-world-output",
-                        content_type=["text/plain"],
+                        data_type="application/json",
+                        content_type=["application/json"],
                         required=True,
                     )
                 ],
@@ -66,17 +72,19 @@ class PluginsView(MethodView):
 
 @CLASSICAL_ANALYSIS_ORTHOGONALITY_BLP.route("/ui/")
 class MicroFrontend(MethodView):
-    """Micro frontend for the hello world plugin."""
+    """Micro frontend for the classical orthogonality state analysis plugin."""
 
     example_inputs = {
-        "inputStr": "Sample input string.",
+        "vector1": "[1, 0, 0]",
+        "vector2": "[0, 1, 0]",
+        "tolerance": "0.01",
     }
 
     @CLASSICAL_ANALYSIS_ORTHOGONALITY_BLP.html_response(
-        HTTPStatus.OK, description="Micro frontend of the hello world plugin."
+        HTTPStatus.OK, description="Micro frontend of the classical orthogonality state analysis plugin."
     )
     @CLASSICAL_ANALYSIS_ORTHOGONALITY_BLP.arguments(
-        HelloWorldParametersSchema(
+        ClassicalStateAnalysisOrthogonalityParametersSchema(
             partial=True, unknown=EXCLUDE, validate_errors_as_result=True
         ),
         location="query",
@@ -88,10 +96,10 @@ class MicroFrontend(MethodView):
         return self.render(request.args, errors, False)
 
     @CLASSICAL_ANALYSIS_ORTHOGONALITY_BLP.html_response(
-        HTTPStatus.OK, description="Micro frontend of the hello world plugin."
+        HTTPStatus.OK, description="Micro frontend of the classical state analysis plugin."
     )
     @CLASSICAL_ANALYSIS_ORTHOGONALITY_BLP.arguments(
-        HelloWorldParametersSchema(
+        ClassicalStateAnalysisOrthogonalityParametersSchema(
             partial=True, unknown=EXCLUDE, validate_errors_as_result=True
         ),
         location="form",
@@ -106,7 +114,7 @@ class MicroFrontend(MethodView):
         plugin = ClassicalStateAnalysisOrthogonality.instance
         if plugin is None:
             abort(HTTPStatus.INTERNAL_SERVER_ERROR)
-        schema = HelloWorldParametersSchema()
+        schema = ClassicalStateAnalysisOrthogonalityParametersSchema()
         return Response(
             render_template(
                 "simple_template.html",
@@ -117,7 +125,7 @@ class MicroFrontend(MethodView):
                 values=data,
                 errors=errors,
                 process=url_for(f"{CLASSICAL_ANALYSIS_ORTHOGONALITY_BLP.name}.ProcessView"),
-                help_text="This is an example help text with basic **Markdown** support.",
+                help_text="Provide two vectors and a tolerance to check their orthogonality.",
                 example_values=url_for(
                     f"{CLASSICAL_ANALYSIS_ORTHOGONALITY_BLP.name}.MicroFrontend", **self.example_inputs
                 ),
@@ -129,16 +137,16 @@ class MicroFrontend(MethodView):
 class ProcessView(MethodView):
     """Start a long running processing task."""
 
-    @CLASSICAL_ANALYSIS_ORTHOGONALITY_BLP.arguments(HelloWorldParametersSchema(unknown=EXCLUDE), location="form")
+    @CLASSICAL_ANALYSIS_ORTHOGONALITY_BLP.arguments(ClassicalStateAnalysisOrthogonalityParametersSchema(unknown=EXCLUDE), location="form")
     @CLASSICAL_ANALYSIS_ORTHOGONALITY_BLP.response(HTTPStatus.SEE_OTHER)
     @CLASSICAL_ANALYSIS_ORTHOGONALITY_BLP.require_jwt("jwt", optional=True)
     def post(self, arguments):
-        """Start the demo task."""
-        db_task = ProcessingTask(task_name=demo_task.name, parameters=dumps(arguments))
+        """Start the orthogonality analysis task."""
+        db_task = ProcessingTask(task_name=orthogonality_task.name, parameters=dumps(arguments))
         db_task.save(commit=True)
 
         # all tasks need to know about db id to load the db entry
-        task: chain = demo_task.s(db_id=db_task.id) | save_task_result.s(db_id=db_task.id)
+        task: chain = orthogonality_task.s(db_id=db_task.id) | save_task_result.s(db_id=db_task.id)
         # save errors to db
         task.link_error(save_task_error.s(db_id=db_task.id))
         task.apply_async()
