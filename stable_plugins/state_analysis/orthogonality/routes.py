@@ -44,7 +44,7 @@ class PluginsView(MethodView):
         return PluginMetadata(
             title=plugin.name,
             description=plugin.description,
-            name=plugin.name,
+            name=plugin.name, #TODO: Correctname
             version=plugin.version,
             type=PluginType.processing,
             entry_point=EntryPoint(
@@ -77,7 +77,7 @@ class MicroFrontend(MethodView):
     example_inputs = {
         "vector1": "[1, 0, 0]",
         "vector2": "[0, 1, 0]",
-        "tolerance": "0.01",
+        "tolerance": 1e-10,
     }
 
     @CLASSICAL_ANALYSIS_ORTHOGONALITY_BLP.html_response(
