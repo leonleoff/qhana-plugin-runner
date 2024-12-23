@@ -1,7 +1,15 @@
 import marshmallow as ma
 from qhana_plugin_runner.api.util import (
     FrontendFormBaseSchema,
+    MaBaseSchema,
 )
+
+# can this be removed?
+class DemoResponseSchema(MaBaseSchema):
+    name = ma.fields.String(required=True, allow_none=False, dump_only=True)
+    version = ma.fields.String(required=True, allow_none=False, dump_only=True)
+    identifier = ma.fields.String(required=True, allow_none=False, dump_only=True)
+
 
 class ClassicalStateAnalysisOrthogonalityParametersSchema(FrontendFormBaseSchema):
     vector1 = ma.fields.List(
