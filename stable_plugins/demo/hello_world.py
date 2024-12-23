@@ -222,7 +222,7 @@ def demo_task(self, db_id: int) -> str:
     if input_str is None:
         raise ValueError("No input argument provided!")
     if input_str:
-        out_str = input_str.replace("input", " nicht test")
+        out_str = input_str.replace("input", "output")
         with SpooledTemporaryFile(mode="w") as output:
             output.write(out_str)
             STORE.persist_task_result(
