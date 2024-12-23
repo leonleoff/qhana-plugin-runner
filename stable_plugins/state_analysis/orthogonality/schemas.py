@@ -3,7 +3,7 @@ from qhana_plugin_runner.api.util import (
     FrontendFormBaseSchema,
 )
 
-class ClassicalStateAnalysisParametersSchema(FrontendFormBaseSchema):
+class ClassicalStateAnalysisOrthogonalityParametersSchema(FrontendFormBaseSchema):
     vector1 = ma.fields.List(
         ma.fields.Float(),
         required=True,
