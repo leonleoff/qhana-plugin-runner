@@ -44,7 +44,7 @@ class PluginsView(MethodView):
         return PluginMetadata(
             title=plugin.name,
             description=plugin.description,
-            name=plugin.name, #TODO: Correctname
+            name=plugin.name,
             version=plugin.version,
             type=PluginType.processing,
             entry_point=EntryPoint(
@@ -75,10 +75,15 @@ class MicroFrontend(MethodView):
     """Micro frontend for the classical orthogonality state analysis plugin."""
 
     example_inputs = {
-        "vector1": "[1, 0, 0]",
-        "vector2": "[0, 1, 0]",
-        "tolerance": 1e-10,
+    "inputJson": (
+        '{\n'
+        '    "vector1": [1.0, 0.0, 3.5],\n'
+        '    "vector2": [0.0, 1.0, -3.5],\n'
+        '    "tolerance": 1e-10\n'
+        '}'
+    )
     }
+
 
     @CLASSICAL_ANALYSIS_ORTHOGONALITY_BLP.html_response(
         HTTPStatus.OK, description="Micro frontend of the classical orthogonality state analysis plugin."
@@ -96,7 +101,7 @@ class MicroFrontend(MethodView):
         return self.render(request.args, errors, False)
 
     @CLASSICAL_ANALYSIS_ORTHOGONALITY_BLP.html_response(
-        HTTPStatus.OK, description="Micro frontend of the classical state analysis plugin."
+        HTTPStatus.OK, description="Micro frontend of the classical orthogonality state analysis plugin."
     )
     @CLASSICAL_ANALYSIS_ORTHOGONALITY_BLP.arguments(
         ClassicalStateAnalysisOrthogonalityParametersSchema(
@@ -137,7 +142,7 @@ class MicroFrontend(MethodView):
                     f"{CLASSICAL_ANALYSIS_ORTHOGONALITY_BLP.name}.MicroFrontend", **self.example_inputs
                 ),
             )
-        )
+    )
 
 
 @CLASSICAL_ANALYSIS_ORTHOGONALITY_BLP.route("/process/")
