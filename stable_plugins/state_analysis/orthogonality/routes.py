@@ -60,8 +60,8 @@ class PluginsView(MethodView):
                 ],
                 data_output=[
                     DataMetadata(
-                        data_type="application/json",
-                        content_type=["application/json"],
+                        data_type="custom/orthogonality-output",
+                        content_type=["text/plain"],
                         required=True,
                     )
                 ],
@@ -115,6 +115,12 @@ class MicroFrontend(MethodView):
         if plugin is None:
             abort(HTTPStatus.INTERNAL_SERVER_ERROR)
         schema = ClassicalStateAnalysisOrthogonalityParametersSchema()
+        result = None
+        task_id = data.get("task_id")
+        if task_id:
+            task = ProcessingTask.get_by_id(task_id)
+            if task:
+                result = task.result
         return Response(
             render_template(
                 "simple_template.html",
@@ -124,6 +130,7 @@ class MicroFrontend(MethodView):
                 valid=valid,
                 values=data,
                 errors=errors,
+                result=result,
                 process=url_for(f"{CLASSICAL_ANALYSIS_ORTHOGONALITY_BLP.name}.ProcessView"),
                 help_text="Provide two vectors and a tolerance to check their orthogonality.",
                 example_values=url_for(
@@ -145,14 +152,14 @@ class ProcessView(MethodView):
         db_task = ProcessingTask(task_name=orthogonality_task.name, parameters=dumps(arguments))
         db_task.save(commit=True)
 
-        # all tasks need to know about db id to load the db entry
+        # Start the task
         task: chain = orthogonality_task.s(db_id=db_task.id) | save_task_result.s(db_id=db_task.id)
-        # save errors to db
         task.link_error(save_task_error.s(db_id=db_task.id))
         task.apply_async()
 
         db_task.save(commit=True)
 
+        # Redirect to the task view
         return redirect(
             url_for("tasks-api.TaskView", task_id=str(db_task.id)), HTTPStatus.SEE_OTHER
         )
