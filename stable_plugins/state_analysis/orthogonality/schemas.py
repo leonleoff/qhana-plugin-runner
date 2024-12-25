@@ -1,44 +1,36 @@
 import marshmallow as ma
-from qhana_plugin_runner.api.util import (
-    FrontendFormBaseSchema,
-    MaBaseSchema,
-)
-
-# can this be removed?
-class DemoResponseSchema(MaBaseSchema):
-    name = ma.fields.String(required=True, allow_none=False, dump_only=True)
-    version = ma.fields.String(required=True, allow_none=False, dump_only=True)
-    identifier = ma.fields.String(required=True, allow_none=False, dump_only=True)
+from qhana_plugin_runner.api.util import FrontendFormBaseSchema
 
 
 class ClassicalStateAnalysisOrthogonalityParametersSchema(FrontendFormBaseSchema):
-    vector1 = ma.fields.List(
-        ma.fields.Float(),
+    input_json = ma.fields.String(
         required=True,
         allow_none=False,
         metadata={
-            "label": "Vector 1",
-            "description": "The first vector for orthogonality analysis.",
+            "label": "Input JSON",
+            "description": (
+                "Provide a JSON object with the keys 'vector1', 'vector2', and optionally 'tolerance'. "
+                "Example: {\"vector1\": [1.0, 0.0, 3.5], \"vector2\": [0.0, 1.0, -3.5], \"tolerance\": 1e-10}"
+            ),
             "input_type": "textarea",
         },
     )
-    vector2 = ma.fields.List(
-        ma.fields.Float(),
-        required=True,
-        allow_none=False,
-        metadata={
-            "label": "Vector 2",
-            "description": "The second vector for orthogonality analysis.",
-            "input_type": "textarea",
-        },
-    )
-    tolerance = ma.fields.Float(
-        required=False,
-        allow_none=False,
-        missing=1e-10,
-        metadata={
-            "label": "Tolerance",
-            "description": "The tolerance value for checking orthogonality.",
-            "input_type": "number",
-        },
-    )
+
+    @ma.post_load
+    def parse_json(self, data, **kwargs):
+        """Parse the JSON input into a Python dictionary."""
+        try:
+            parsed_data = ma.utils.json.loads(data["input_json"])
+            if "vector1" not in parsed_data or "vector2" not in parsed_data:
+                raise ma.ValidationError("Both 'vector1' and 'vector2' are required in the JSON.")
+            
+            # Optionally validate vectors and tolerance
+            if not isinstance(parsed_data["vector1"], list) or not isinstance(parsed_data["vector2"], list):
+                raise ma.ValidationError("'vector1' and 'vector2' must be lists of numbers.")
+            
+            if "tolerance" in parsed_data and not isinstance(parsed_data["tolerance"], (int, float)):
+                raise ma.ValidationError("'tolerance' must be a number if provided.")
+            
+            return parsed_data
+        except Exception as e:
+            raise ma.ValidationError(f"Invalid JSON format: {str(e)}")
