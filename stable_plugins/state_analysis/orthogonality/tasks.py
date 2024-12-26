@@ -7,6 +7,7 @@ from celery.utils.log import get_task_logger
 
 import numpy as np
 
+from .algorithm import are_vectors_orthogonal
 from . import ClassicalStateAnalysisOrthogonality
 from qhana_plugin_runner.celery import CELERY
 from qhana_plugin_runner.db.models.tasks import ProcessingTask
@@ -36,7 +37,7 @@ def orthogonality_task(self, db_id: int) -> str:
         vec1 = np.array(vector1, dtype=float)
         vec2 = np.array(vector2, dtype=float)
 
-        result = np.isclose(np.dot(vec1, vec2), 0, atol=tolerance)
+        result = are_vectors_orthogonal(vec1,vec2,tolerance)
         output_message = "Vectors are orthogonal." if result else "Vectors are not orthogonal."
 
         # Speichere das Ergebnis als Datei
