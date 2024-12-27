@@ -18,7 +18,7 @@ from flask import Flask
 from qhana_plugin_runner.api.util import SecurityBlueprint
 from qhana_plugin_runner.util.plugins import plugin_identifier, QHAnaPluginBase
 
-_plugin_name = "schmidtrank_classical"
+_plugin_name = "schmidtrank_classical3"
 __version__ = "v0.0.1"
 _identifier = plugin_identifier(_plugin_name, __version__)
 

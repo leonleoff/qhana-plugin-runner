@@ -1,16 +1,12 @@
 from tempfile import SpooledTemporaryFile
-
 from typing import Optional
 from json import loads
-
 from celery.utils.log import get_task_logger
-
 import numpy as np
 from .algorithm import compute_schmidt_rank
 from . import ClassicalStateAnalysisSchmidtrank
 from qhana_plugin_runner.celery import CELERY
 from qhana_plugin_runner.db.models.tasks import ProcessingTask
-
 from qhana_plugin_runner.storage import STORE
 
 TASK_LOGGER = get_task_logger(__name__)
@@ -19,7 +15,11 @@ TASK_LOGGER = get_task_logger(__name__)
 def schmidtrank_task(self, db_id: int) -> str:
     TASK_LOGGER.info(f"Starting schmidtrank task with db id '{db_id}'")
     task_data = ProcessingTask.get_by_id(id_=db_id)
-    
+    if not task_data:
+        msg = f"Could not load task data with id {db_id}!"
+        TASK_LOGGER.error(msg)
+        raise KeyError(msg)
+
     parameters = loads(task_data.parameters or "{}")
     state = parameters.get("state", [])
     dim_A = parameters.get("dim_A", 0)
@@ -27,10 +27,10 @@ def schmidtrank_task(self, db_id: int) -> str:
     tolerance = parameters.get("tolerance", 1e-10)
 
     TASK_LOGGER.info(f"Parameters: state={state}, dim_A={dim_A}, dim_B={dim_B}, tolerance={tolerance}")
-    
+
     try:
         # Convert state to numpy array
-        state_array = []
+        state_array = np.array(state, dtype=complex)
 
 
         try:
@@ -42,16 +42,25 @@ def schmidtrank_task(self, db_id: int) -> str:
                 try:
                     # Try to parse the value as a complex number
                     complexN = complex(val)
-                    complex_list.append(complexN)
                 except ValueError:
-                    raise ValueError(f"Invalid element in 'state': {val}") from e
+                    try:
+                        # If it fails, try to parse it as a float and convert to complex
+                        float_val = float(val)
+                        complexN = complex(float_val, 0.0)  # Add imaginary part as 0.0
+                    except ValueError as e:
+                        # Raise an error if neither complex nor float parsing works
+                        raise ValueError(f"Invalid element in 'state': {val}") from e
+                # Append the parsed complex number to the list
+                complex_list.append(complexN)
+
             # Convert the list to a numpy array
             state_array = np.array(complex_list, dtype=complex)
 
         except ValueError as e:
             TASK_LOGGER.error(f"Failed to cast 'state' elements to complex numbers: {e}")
             raise ValueError(f"Invalid element in 'state': {e}")
-        
+
+
         # Validate dimensions
         if len(state_array) != dim_A * dim_B:
             error_msg = (
@@ -82,3 +91,29 @@ def schmidtrank_task(self, db_id: int) -> str:
     except Exception as e:
         TASK_LOGGER.error(f"Error in schmidtrank task: {e}")
         raise
+
+
+@CELERY.task(name=f"{ClassicalStateAnalysisSchmidtrank.instance.identifier}.orthogonality_task", bind=True)
+def orthogonality_task(self, db_id: int) -> str:
+    TASK_LOGGER.info(f"Starting orthogonality task with db id '{db_id}'")
+    task_data = ProcessingTask.get_by_id(id_=db_id)
+
+    if not task_data:
+        msg = f"Could not load task data with id {db_id}!"
+        TASK_LOGGER.error(msg)
+        raise KeyError(msg)
+
+    parameters = loads(task_data.parameters or "{}")
+    
+    with SpooledTemporaryFile(mode="w") as output:
+        output.write(parameters)
+        output.seek(0)  # Datei-Pointer zurücksetzen
+        STORE.persist_task_result(
+            db_id,
+            output,
+            "out.txt",  # Dateiname
+            "custom/orthogonality-output",  # Datentyp
+            "text/plain",  # Content-Type
+        )
+
+    return parameters

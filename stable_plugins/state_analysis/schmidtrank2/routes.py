@@ -28,7 +28,7 @@ from qhana_plugin_runner.tasks import (
 
 from . import CLASSICAL_ANALYSIS_SCHMIDTRANK_BLP, ClassicalStateAnalysisSchmidtrank
 from .schemas import ClassicalStateAnalysisSchmidtrankParametersSchema
-from .tasks import schmidtrank_task, orthogonality_task
+from .tasks import schmidtrank_task
 
 @CLASSICAL_ANALYSIS_SCHMIDTRANK_BLP.route("/")
 class PluginsView(MethodView):
@@ -143,7 +143,7 @@ class MicroFrontend(MethodView):
                     f"{CLASSICAL_ANALYSIS_SCHMIDTRANK_BLP.name}.MicroFrontend", **self.example_inputs
                 ),
             )
-        )
+    )
 
 
 @CLASSICAL_ANALYSIS_SCHMIDTRANK_BLP.route("/process/")
@@ -155,15 +155,9 @@ class ProcessView(MethodView):
     @CLASSICAL_ANALYSIS_SCHMIDTRANK_BLP.require_jwt("jwt", optional=True)
     def post(self, arguments):
         """Start the schmidtrank analysis task."""
-        
-        db_task = ProcessingTask(task_name=orthogonality_task.name, parameters=dumps(arguments))
-        # Redirect to the task view
+        db_task = ProcessingTask(task_name=schmidtrank_task.name, parameters=dumps(arguments))
         db_task.save(commit=True)
 
-        return redirect(
-            url_for("tasks-api.TaskView", task_id=str(11)), HTTPStatus.SEE_OTHER
-        )
-        
         # Start the task
         task: chain = schmidtrank_task.s(db_id=db_task.id) | save_task_result.s(db_id=db_task.id)
         task.link_error(save_task_error.s(db_id=db_task.id))
