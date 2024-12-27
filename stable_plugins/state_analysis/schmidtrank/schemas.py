@@ -20,33 +20,16 @@ class ClassicalStateAnalysisSchmidtrankParametersSchema(FrontendFormBaseSchema):
         """Parse the JSON input into a Python dictionary."""
         try:
             parsed_data = ma.utils.json.loads(data["input_json"])
+            if "vector1" not in parsed_data or "vector2" not in parsed_data:
+                raise ma.ValidationError("Both 'vector1' and 'vector2' are required in the JSON.")
             
-            # Validate required keys
-            if "state" not in parsed_data or "dim_A" not in parsed_data or "dim_B" not in parsed_data:
-                raise ma.ValidationError("Keys 'state', 'dim_A', and 'dim_B' are required in the JSON.")
+            # Optionally validate vectors and tolerance
+            if not isinstance(parsed_data["vector1"], list) or not isinstance(parsed_data["vector2"], list):
+                raise ma.ValidationError("'vector1' and 'vector2' must be lists of numbers.")
             
-            # Validate state (must be a list with complex numbers as strings)
-            if not (
-                isinstance(parsed_data["state"], list) and 
-                all(isinstance(val, str) and complex(val) for val in parsed_data["state"])
-            ):
-                raise ma.ValidationError("'state' must be a list containing complex numbers as strings.")
-            
-            # Validate dim_A and dim_B (must be integers)
-            if not (isinstance(parsed_data["dim_A"], int) and isinstance(parsed_data["dim_B"], int)):
-                raise ma.ValidationError("'dim_A' and 'dim_B' must be integers.")
-            
-            # Validate tolerance (optional, must be a number if provided)
             if "tolerance" in parsed_data and not isinstance(parsed_data["tolerance"], (int, float)):
                 raise ma.ValidationError("'tolerance' must be a number if provided.")
-
-            # Convert state from strings to complex numbers
-            parsed_data["state"] = [complex(val) for val in parsed_data["state"]]
-
-            # Validate that dim_A * dim_B equals the length of the state
-            if len(parsed_data["state"]) != parsed_data["dim_A"] * parsed_data["dim_B"]:
-                raise ma.ValidationError("The product of 'dim_A' and 'dim_B' must match the length of 'state'.")
-
+            
             return parsed_data
         except Exception as e:
             raise ma.ValidationError(f"Invalid JSON format: {str(e)}")
