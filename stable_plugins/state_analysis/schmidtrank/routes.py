@@ -154,7 +154,7 @@ class ProcessView(MethodView):
     @CLASSICAL_ANALYSIS_SCHMIDTRANK_BLP.require_jwt("jwt", optional=True)
     def post(self, arguments):
         """Start the orthogonality analysis task."""
-        db_task = ProcessingTask(task_name=orthogonality_task.name, parameters=dumps(arguments))
+        db_task = ProcessingTask(task_name=schmidtrank_task.name, parameters=dumps(arguments))
         db_task.save(commit=True)
 
         # Start the task
