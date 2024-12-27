@@ -1,27 +1,21 @@
 import numpy as np
 
-def are_vectors_orthogonal(vec1: np.ndarray, vec2: np.ndarray, tolerance: float = 1e-10) -> bool:
+def are_vectors_linearly_dependent(vectors: list[np.ndarray], tolerance: float = 1e-10) -> bool:
     """
-    Checks whether two NumPy vectors are orthogonal by calculating their dot product using a for loop.
+    Checks if a list of vectors is linearly dependent.
 
     Args:
-        vec1 (np.ndarray): The first vector.
-        vec2 (np.ndarray): The second vector.
-        tolerance (float): The tolerance value for checking lineardependence (default is 1e-10).
+        vectors (list[np.ndarray]): A list of NumPy arrays representing vectors.
+        tolerance (float): A small tolerance for numerical stability (default 1e-10).
 
     Returns:
-        bool: True if the vectors are orthogonal, False otherwise.
+        bool: True if the vectors are linearly dependent, False otherwise.
     """
-    # Ensure the vectors have the same length
-    if len(vec1) != len(vec2):
-        raise ValueError("Vectors must have the same dimension.")
-    
-    # Initialize the dot product
-    dot_product = 0.0
+    # Convert the list of vectors into a matrix where each vector is a row
+    matrix = np.vstack(vectors)
 
-    # Calculate the dot product using a for loop
-    for i in range(len(vec1)):
-        dot_product += vec1[i] * vec2[i]
+    # Calculate the rank of the matrix
+    rank = np.linalg.matrix_rank(matrix, tol=tolerance)
 
-    # Check if the dot product is close to zero within the specified tolerance
-    return abs(dot_product) < tolerance
+    # If the rank is smaller than the number of vectors, they are linearly dependent
+    return rank < len(vectors)

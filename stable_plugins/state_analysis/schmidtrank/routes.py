@@ -77,8 +77,9 @@ class MicroFrontend(MethodView):
     example_inputs = {
     "inputJson": (
         '{\n'
-        '    "vector1": [1.0, 0.0, 3.5],\n'
-        '    "vector2": [0.0, 1.0, -3.5],\n'
+        '    "state": ["0.7071067811865475+0j", "0+0j", "0+0j", "0.7071067811865475+0j"],\n'
+        '    "dim_A": 2,\n'
+        '    "dim_B": 2,\n'
         '    "tolerance": 1e-10\n'
         '}'
     )
@@ -137,12 +138,12 @@ class MicroFrontend(MethodView):
                 errors=errors,
                 result=result,
                 process=url_for(f"{CLASSICAL_ANALYSIS_SCHMIDTRANK_BLP.name}.ProcessView"),
-                help_text="Provide two vectors and a tolerance to check their schmidtrank.",
+                help_text="Provide a quantum state, subsystem dimensions, and tolerance for the Schmidt rank analysis.",
                 example_values=url_for(
                     f"{CLASSICAL_ANALYSIS_SCHMIDTRANK_BLP.name}.MicroFrontend", **self.example_inputs
                 ),
             )
-    )
+        )
 
 
 @CLASSICAL_ANALYSIS_SCHMIDTRANK_BLP.route("/process/")
@@ -156,7 +157,6 @@ class ProcessView(MethodView):
         """Start the schmidtrank analysis task."""
         db_task = ProcessingTask(task_name=schmidtrank_task.name, parameters=dumps(arguments))
         db_task.save(commit=True)
-
         # Start the task
         task: chain = schmidtrank_task.s(db_id=db_task.id) | save_task_result.s(db_id=db_task.id)
         task.link_error(save_task_error.s(db_id=db_task.id))

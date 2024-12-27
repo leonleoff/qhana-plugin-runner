@@ -7,7 +7,7 @@ from celery.utils.log import get_task_logger
 
 import numpy as np
 
-from .algorithm import are_vectors_orthogonal
+from .algorithm import are_vectors_special_linearly_dependent
 from . import ClassicalStateAnalysisSpeciallineardependence
 from qhana_plugin_runner.celery import CELERY
 from qhana_plugin_runner.db.models.tasks import ProcessingTask
@@ -16,44 +16,46 @@ from qhana_plugin_runner.storage import STORE
 
 TASK_LOGGER = get_task_logger(__name__)
 
-@CELERY.task(name=f"{ClassicalStateAnalysisSpeciallineardependence.instance.identifier}.speciallineardependence_task", bind=True)
+@CELERY.task(name=f"{ClassicalStateAnalysisSpeciallineardependence.instance.identifier}.schmidtrank_task", bind=True)
 def speciallineardependence_task(self, db_id: int) -> str:
     TASK_LOGGER.info(f"Starting speciallineardependence task with db id '{db_id}'")
     task_data = ProcessingTask.get_by_id(id_=db_id)
-
     if not task_data:
         msg = f"Could not load task data with id {db_id}!"
         TASK_LOGGER.error(msg)
         raise KeyError(msg)
 
     parameters = loads(task_data.parameters or "{}")
-    vector1 = parameters.get("vector1", [])
-    vector2 = parameters.get("vector2", [])
+    state = parameters.get("state", [])
+    dim_A = parameters.get("dim_A", 0)
+    dim_B = parameters.get("dim_B", 0)
     tolerance = parameters.get("tolerance", 1e-10)
 
-    TASK_LOGGER.info(f"Parameters: vector1={vector1}, vector2={vector2}, tolerance={tolerance}")
+    TASK_LOGGER.info(f"Parameters: state={state}, dim_A={dim_A}, dim_B={dim_B}, tolerance={tolerance}")
 
     try:
-        vec1 = np.array(vector1, dtype=float)
-        vec2 = np.array(vector2, dtype=float)
+        # Convert state to numpy array
+        state_array = np.array(state, dtype=complex)
 
-        result = are_vectors_orthogonal(vec1,vec2,tolerance)
-        output_message = "Vectors are linearly dependent." if result else "Vectors are not linearly dependent."
+        # Call the are_vectors_special_linearly_dependent function
+        result = are_vectors_special_linearly_dependent(state=state_array, dim_A=dim_A, dim_B=dim_B, tolerance=tolerance)
 
-        # Speichere das Ergebnis als Datei
+        output_message = f"The vectors are {'linearly dependent' if result else 'not linearly dependent'}."
+
+        # Save the result to a file
         with SpooledTemporaryFile(mode="w") as output:
             output.write(output_message)
-            output.seek(0)  # Datei-Pointer zurücksetzen
+            output.seek(0)  # Reset file pointer
             STORE.persist_task_result(
                 db_id,
                 output,
-                "out.txt",  # Dateiname
-                "custom/speciallineardependence-output",  # Datentyp
+                "out.txt",  # Filename
+                "custom/special-dependency-output",  # Data type
                 "text/plain",  # Content-Type
             )
 
         return output_message
 
     except Exception as e:
-        TASK_LOGGER.error(f"Error in speciallineardependence task: {e}")
+        TASK_LOGGER.error(f"Error in schmidtrank task: {e}")
         raise
