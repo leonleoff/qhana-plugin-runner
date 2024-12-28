@@ -32,7 +32,7 @@ CLASSICAL_ANALYSIS_SPECIALLINEARDEPENDENCE_BLP = SecurityBlueprint(
 class ClassicalStateAnalysisSpeciallineardependence(QHAnaPluginBase):
     name = _plugin_name
     version = __version__
-    description = "Analyzes whether multiple classical state vectors are linearly dependent."
+    description = "Analyzes whether a state is speciallinear dependend or not."
     tags = ["classical-state-analysis", "speciallineardependence"]
 
     def __init__(self, app: Optional[Flask]) -> None:

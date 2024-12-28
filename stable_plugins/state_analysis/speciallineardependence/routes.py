@@ -77,9 +77,9 @@ class MicroFrontend(MethodView):
     example_inputs = {
     "inputJson": (
         '{\n'
-        '    "state": ["0.7071067811865475+0j", "0.7071067811865475+0j"],\n'
-        '    "dim_A": 1,\n'
-        '    "dim_B": 1,\n'
+        '    "state": ["0.7071067811865475+0j", "0+0j", "0+0j", "0.7071067811865475+0j"],\n'
+        '    "dim_A": 2,\n'
+        '    "dim_B": 2,\n'
         '    "tolerance": 1e-10\n'
         '}'
     )
