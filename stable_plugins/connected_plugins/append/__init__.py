@@ -18,31 +18,31 @@ from flask import Flask
 from qhana_plugin_runner.api.util import SecurityBlueprint
 from qhana_plugin_runner.util.plugins import plugin_identifier, QHAnaPluginBase
 
-_plugin_name = "start"
+_plugin_name = "append"
 __version__ = "v0.0.1"
 _identifier = plugin_identifier(_plugin_name, __version__)
 
-START_PLUGIN_BLP = SecurityBlueprint(
+APPEND_PLUGIN_BLP = SecurityBlueprint(
     _identifier,  # blueprint name
     __name__,  # module import name!
-    description="Start plugin API for interacting with the Append plugin.",
-    template_folder="start_templates",
+    description="Append plugin API for appending text.",
+    template_folder="append_templates",
 )
 
-class StartPlugin(QHAnaPluginBase):
+class AppendPlugin(QHAnaPluginBase):
     name = _plugin_name
     version = __version__
-    description = "Handles user input and communicates with the Append plugin."
-    tags = ["start-plugin", "communication"]
+    description = "Appends 'world' to the provided input text."
+    tags = ["append-plugin", "text-processing"]
 
     def __init__(self, app: Optional[Flask]) -> None:
         super().__init__(app)
 
     def get_api_blueprint(self):
-        return START_PLUGIN_BLP
+        return APPEND_PLUGIN_BLP
 
 try:
-    # It is important to import the routes **after** START_PLUGIN_BLP and StartPlugin are defined,
+    # It is important to import the routes **after** APPEND_PLUGIN_BLP and AppendPlugin are defined,
     # because they are accessed as soon as the routes are imported.
     from . import routes
 except ImportError:

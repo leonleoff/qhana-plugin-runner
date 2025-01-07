@@ -2,10 +2,8 @@ from http import HTTPStatus
 from json import dumps
 from typing import Mapping, Optional
 
-from celery.canvas import chain
 from celery.utils.log import get_task_logger
-from flask import Response, abort, redirect
-from flask.globals import current_app, request
+from flask import Response, abort, request
 from flask.helpers import url_for
 from flask.templating import render_template
 from flask.views import MethodView
@@ -19,22 +17,21 @@ from qhana_plugin_runner.api.plugin_schemas import (
     PluginType,
 )
 from qhana_plugin_runner.db.models.tasks import ProcessingTask
-from qhana_plugin_runner.plugin_utils.interop import call_plugin_endpoint
 from qhana_plugin_runner.tasks import save_task_error, save_task_result
 
-from . import START_PLUGIN_BLP, StartPlugin
-from .schemas import StartPluginParametersSchema
-from .tasks import start_task
+from . import APPEND_PLUGIN_BLP, AppendPlugin
+from .schemas import AppendPluginParametersSchema
+from .tasks import append_task
 
-@START_PLUGIN_BLP.route("/")
+@APPEND_PLUGIN_BLP.route("/")
 class PluginsView(MethodView):
     """Plugins collection resource."""
 
-    @START_PLUGIN_BLP.response(HTTPStatus.OK, PluginMetadataSchema())
-    @START_PLUGIN_BLP.require_jwt("jwt", optional=True)
+    @APPEND_PLUGIN_BLP.response(HTTPStatus.OK, PluginMetadataSchema())
+    @APPEND_PLUGIN_BLP.require_jwt("jwt", optional=True)
     def get(self):
         """Endpoint returning the plugin metadata."""
-        plugin = StartPlugin.instance
+        plugin = AppendPlugin.instance
         if plugin is None:
             abort(HTTPStatus.INTERNAL_SERVER_ERROR)
         return PluginMetadata(
@@ -44,8 +41,8 @@ class PluginsView(MethodView):
             version=plugin.version,
             type=PluginType.processing,
             entry_point=EntryPoint(
-                href=url_for(f"{START_PLUGIN_BLP.name}.ProcessView"),
-                ui_href=url_for(f"{START_PLUGIN_BLP.name}.MicroFrontend"),
+                href=url_for(f"{APPEND_PLUGIN_BLP.name}.ProcessView"),
+                ui_href=url_for(f"{APPEND_PLUGIN_BLP.name}.MicroFrontend"),
                 plugin_dependencies=[],
                 data_input=[
                     DataMetadata(
@@ -56,59 +53,59 @@ class PluginsView(MethodView):
                 ],
                 data_output=[
                     DataMetadata(
-                        data_type="custom/start-output",
+                        data_type="custom/append-output",
                         content_type=["text/plain"],
                         required=True,
                     )
                 ],
             ),
-            tags=StartPlugin.instance.tags,
+            tags=AppendPlugin.instance.tags,
         )
 
 
-@START_PLUGIN_BLP.route("/ui/")
+@APPEND_PLUGIN_BLP.route("/ui/")
 class MicroFrontend(MethodView):
-    """Micro frontend for the Start plugin."""
+    """Micro frontend for the Append plugin."""
 
     example_inputs = {
         "inputText": "Hello",
     }
 
-    @START_PLUGIN_BLP.html_response(
-        HTTPStatus.OK, description="Micro frontend of the Start plugin."
+    @APPEND_PLUGIN_BLP.html_response(
+        HTTPStatus.OK, description="Micro frontend of the Append plugin."
     )
-    @START_PLUGIN_BLP.arguments(
-        StartPluginParametersSchema(
+    @APPEND_PLUGIN_BLP.arguments(
+        AppendPluginParametersSchema(
             partial=True, unknown=EXCLUDE, validate_errors_as_result=True
         ),
         location="query",
         required=False,
     )
-    @START_PLUGIN_BLP.require_jwt("jwt", optional=True)
+    @APPEND_PLUGIN_BLP.require_jwt("jwt", optional=True)
     def get(self, errors):
         """Return the micro frontend."""
         return self.render(request.args, errors, False)
 
-    @START_PLUGIN_BLP.html_response(
-        HTTPStatus.OK, description="Micro frontend of the Start plugin."
+    @APPEND_PLUGIN_BLP.html_response(
+        HTTPStatus.OK, description="Micro frontend of the Append plugin."
     )
-    @START_PLUGIN_BLP.arguments(
-        StartPluginParametersSchema(
+    @APPEND_PLUGIN_BLP.arguments(
+        AppendPluginParametersSchema(
             partial=True, unknown=EXCLUDE, validate_errors_as_result=True
         ),
         location="form",
         required=False,
     )
-    @START_PLUGIN_BLP.require_jwt("jwt", optional=True)
+    @APPEND_PLUGIN_BLP.require_jwt("jwt", optional=True)
     def post(self, errors):
         """Return the micro frontend with prerendered inputs."""
         return self.render(request.form, errors, not errors)
 
     def render(self, data: Mapping, errors: dict, valid: bool):
-        plugin = StartPlugin.instance
+        plugin = AppendPlugin.instance
         if plugin is None:
             abort(HTTPStatus.INTERNAL_SERVER_ERROR)
-        schema = StartPluginParametersSchema()
+        schema = AppendPluginParametersSchema()
         result = None
         task_id = data.get("task_id")
         if task_id:
@@ -125,35 +122,35 @@ class MicroFrontend(MethodView):
                 values=data,
                 errors=errors,
                 result=result,
-                process=url_for(f"{START_PLUGIN_BLP.name}.ProcessView"),
-                help_text="Provide a text input that will be passed to the Append plugin.",
+                process=url_for(f"{APPEND_PLUGIN_BLP.name}.ProcessView"),
+                help_text="Provide a text input that will be appended with 'world'.",
                 example_values=url_for(
-                    f"{START_PLUGIN_BLP.name}.MicroFrontend", **self.example_inputs
+                    f"{APPEND_PLUGIN_BLP.name}.MicroFrontend", **self.example_inputs
                 ),
             )
         )
 
 
-@START_PLUGIN_BLP.route("/process/")
+@APPEND_PLUGIN_BLP.route("/process/")
 class ProcessView(MethodView):
     """Start a long running processing task."""
 
-    @START_PLUGIN_BLP.arguments(StartPluginParametersSchema(unknown=EXCLUDE), location="form")
-    @START_PLUGIN_BLP.response(HTTPStatus.SEE_OTHER)
-    @START_PLUGIN_BLP.require_jwt("jwt", optional=True)
+    @APPEND_PLUGIN_BLP.arguments(AppendPluginParametersSchema(unknown=EXCLUDE), location="form")
+    @APPEND_PLUGIN_BLP.response(HTTPStatus.SEE_OTHER)
+    @APPEND_PLUGIN_BLP.require_jwt("jwt", optional=True)
     def post(self, arguments):
-        """Start the task to communicate with the Append plugin."""
-        db_task = ProcessingTask(task_name=start_task.name, parameters=dumps(arguments))
+        """Start the append task."""
+        db_task = ProcessingTask(task_name=append_task.name, parameters=dumps(arguments))
         db_task.save(commit=True)
 
         # Start the task
-        task: chain = start_task.s(db_id=db_task.id) | save_task_result.s(db_id=db_task.id)
+        task = append_task.s(db_id=db_task.id) | save_task_result.s(db_id=db_task.id)
         task.link_error(save_task_error.s(db_id=db_task.id))
         task.apply_async()
 
         db_task.save(commit=True)
 
         # Redirect to the task view
-        return redirect(
-            url_for("tasks-api.TaskView", task_id=str(db_task.id)), HTTPStatus.SEE_OTHER
+        return Response(
+            "Task started successfully.", status=HTTPStatus.ACCEPTED
         )

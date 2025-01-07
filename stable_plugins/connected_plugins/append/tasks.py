@@ -3,20 +3,17 @@ from typing import Optional
 from json import loads
 
 from celery.utils.log import get_task_logger
-from flask.globals import current_app
-
 from qhana_plugin_runner.celery import CELERY
 from qhana_plugin_runner.db.models.tasks import ProcessingTask
-from qhana_plugin_runner.plugin_utils.interop import call_plugin_endpoint
 from qhana_plugin_runner.storage import STORE
 
-from . import StartPlugin
+from . import AppendPlugin
 
 TASK_LOGGER = get_task_logger(__name__)
 
-@CELERY.task(name=f"{StartPlugin.instance.identifier}.start_task", bind=True)
-def start_task(self, db_id: int) -> str:
-    TASK_LOGGER.info(f"Starting start task with db id '{db_id}'")
+@CELERY.task(name=f"{AppendPlugin.instance.identifier}.append_task", bind=True)
+def append_task(self, db_id: int) -> str:
+    TASK_LOGGER.info(f"Starting append task with db id '{db_id}'")
     task_data = ProcessingTask.get_by_id(id_=db_id)
 
     if not task_data:
@@ -29,19 +26,10 @@ def start_task(self, db_id: int) -> str:
 
     TASK_LOGGER.info(f"Input text: {input_text}")
 
-    # URL of the Append plugin
-    append_plugin_url = "http://append-plugin-url/process/"
-    append_payload = {"inputText": input_text}
-
     try:
-        # Call the Append plugin
-        TASK_LOGGER.info(f"Calling Append plugin at {append_plugin_url}")
-        response = call_plugin_endpoint(append_plugin_url, append_payload)
-        response_data = response.json()
-
-        # Retrieve the output from the Append plugin
-        output_text = response_data.get("outputText", "")
-        TASK_LOGGER.info(f"Received output from Append plugin: {output_text}")
+        # Append "world" to the input text
+        output_text = f"{input_text} world"
+        TASK_LOGGER.info(f"Appended text: {output_text}")
 
         # Save the result
         with SpooledTemporaryFile(mode="w") as output:
@@ -51,12 +39,12 @@ def start_task(self, db_id: int) -> str:
                 db_id,
                 output,
                 "output.txt",  # Filename
-                "custom/start-output",  # Data type
+                "custom/append-output",  # Data type
                 "text/plain",  # Content type
             )
 
         return output_text
 
     except Exception as e:
-        TASK_LOGGER.error(f"Error in start task: {e}")
+        TASK_LOGGER.error(f"Error in append task: {e}")
         raise

@@ -64,7 +64,7 @@ def speciallineardependence_task(self, db_id: int) -> str:
         # Call the compute_schmidt_rank function
         result = analyze_schmidt_basis(state=state_array, dim_A=dim_A, dim_B=dim_B, tolerance=tolerance)
 
-        output_message = "the state is special linear depending" if result else "the state is not special linear dependent"
+        output_message = "the state is not special linear dependent" if result else "the state is special linear depending"
 
         # Save the result to a file
         with SpooledTemporaryFile(mode="w") as output:
