@@ -1,10 +1,9 @@
 import marshmallow as ma
 from qhana_plugin_runner.api.util import FrontendFormBaseSchema
-from .marshmallow import TOLERANCE
+from .marshmallow_util import TOLERANCE, SETOFCOMPLEXVECTORSField
 
 class ClassicalStateAnalysisLineardependenceParametersSchema(FrontendFormBaseSchema):
-    vectors = ma.fields.List(
-        ma.fields.List(ma.fields.Float(), required=True),
+    vectors = SETOFCOMPLEXVECTORSField(
         required=True,
         allow_none=False,
         metadata={
