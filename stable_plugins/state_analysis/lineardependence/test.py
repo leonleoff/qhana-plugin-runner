@@ -1,4 +1,4 @@
-from marshmallow_util import COMPLEXNUMBER, COMPLEXVECTOR
+from marshmallow_util import COMPLEXNUMBER, COMPLEXVECTOR, SETOFCOMPLEXVECTORS
 import marshmallow as ma
 
 # Tests for COMPLEXNUMBER
@@ -128,6 +128,127 @@ def test_complexvector_field_missing():
     except ma.ValidationError as e:
         assert "Missing data for required field." in str(e), f"Unexpected error: {e}"
 
+def test_setcomplexvectors_field_valid():
+    """Test a valid set of complex vectors."""
+    class MySchema(ma.Schema):
+        complex_vectors = SETOFCOMPLEXVECTORS(required=True)
+
+    schema = MySchema()
+
+    input_data = {
+        "complex_vectors": [
+            [
+                [1.0, -2.0],
+                [3.5, 4.0],
+                [-1.5, 0.0]
+            ],
+            [
+                [3.0, -2.0],
+                [5.5, 6.0],
+                [-1.5, 9.0]
+            ],
+            [
+                [11.0, -2.0],
+                [36.5, 0.0],
+                [-1.5, -3.0]
+            ]
+        ]
+    }
+
+    output_data = {
+        "complex_vectors": [
+            [
+                complex(1.0, -2.0),
+                complex(3.5, 4.0),
+                complex(-1.5, 0.0)
+            ],
+            [
+                complex(3.0, -2.0),
+                complex(5.5, 6.0),
+                complex(-1.5, 9.0)
+            ],
+            [
+                complex(11.0, -2.0),
+                complex(36.5, 0.0),
+                complex(-1.5, -3.0)
+            ]
+        ]
+    }
+
+    result = schema.load(input_data)
+    assert result == output_data, f"Unexpected result: {result}"
+
+def test_setcomplexvectors_field_empty():
+    """Test an empty set of complex vectors."""
+    class MySchema(ma.Schema):
+        complex_vectors = SETOFCOMPLEXVECTORS(required=True)
+
+    schema = MySchema()
+
+    input_data = {"complex_vectors": []}
+    output_data = {"complex_vectors": []}
+
+    result = schema.load(input_data)
+    assert result == output_data, f"Unexpected result: {result}"
+
+def test_setcomplexvectors_field_invalid_element():
+    """Test a set of complex vectors with an invalid element."""
+    class MySchema(ma.Schema):
+        complex_vectors = SETOFCOMPLEXVECTORS(required=True)
+
+    schema = MySchema()
+
+    input_data = {
+        "complex_vectors": [
+            [
+                [1.0, -2.0],
+                "invalid_element",  # Not a list or tuple
+                [-1.5, 0.0]
+            ]
+        ]
+    }
+
+    try:
+        schema.load(input_data)
+    except ma.ValidationError as e:
+        assert "Invalid input" in str(e), f"Unexpected error: {e}"
+
+def test_setcomplexvectors_field_missing():
+    """Test missing complex vectors field."""
+    class MySchema(ma.Schema):
+        complex_vectors = SETOFCOMPLEXVECTORS(required=True)
+
+    schema = MySchema()
+
+    input_data = {}  # Missing 'complex_vectors'
+
+    try:
+        schema.load(input_data)
+    except ma.ValidationError as e:
+        assert "Missing data for required field." in str(e), f"Unexpected error: {e}"
+
+def test_setcomplexvectors_field_invalid_structure():
+    """Test a set of complex vectors with an invalid structure."""
+    class MySchema(ma.Schema):
+        complex_vectors = SETOFCOMPLEXVECTORS(required=True)
+
+    schema = MySchema()
+
+    input_data = {
+        "complex_vectors": [
+            [
+                [1.0],  # Missing imaginary part
+                [3.5, 4.0]
+            ]
+        ]
+    }
+
+    try:
+        schema.load(input_data)
+    except ma.ValidationError as e:
+        assert "Invalid input" in str(e), f"Unexpected error: {e}"
+
+
 # Run tests
 if __name__ == "__main__":
     
@@ -142,4 +263,12 @@ if __name__ == "__main__":
     test_complexvector_field_invalid_element()
     test_complexvector_field_empty()
     test_complexvector_field_missing()
+
+    # Tests for SETOFCOMPLEXVECTORS
+    test_setcomplexvectors_field_valid()
+    test_setcomplexvectors_field_empty()
+    test_setcomplexvectors_field_invalid_element()
+    test_setcomplexvectors_field_missing()
+    test_setcomplexvectors_field_invalid_structure()
+
     print("All tests passed.")

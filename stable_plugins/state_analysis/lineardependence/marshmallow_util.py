@@ -44,7 +44,7 @@ class COMPLEXVECTOR(ma.fields.List):
         super().__init__(COMPLEXNUMBER(), **metadata)
 
 
-class SETOFCOMPLEXVECTORSField(ma.fields.List):
+class SETOFCOMPLEXVECTORS(ma.fields.List):
     """Field for a set of vectors of complex numbers."""
     def __init__(self, **metadata):
-        super().__init__(COMPLEXVECTORSField(), **metadata)
+        super().__init__(COMPLEXVECTOR(), **metadata)
