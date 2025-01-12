@@ -1,14 +1,13 @@
 import marshmallow as ma
 
 class TOLERANCE(ma.fields.Float):
-    """A Float field with a default value when an empty string or None is provided."""
+    """A Float field with a default value when an empty string is provided."""
 
     def __init__(self, *, default_tolerance: float, allow_nan: bool = False, as_string: bool = False, **kwargs):
         self.default_tolerance = default_tolerance
-        self.allow_nan = allow_nan
-        super().__init__(as_string=as_string, **kwargs)
+        super().__init__(as_string=as_string, **kwargs  ,missing = default_tolerance )
 
-    def _validated(self, value):
+    def _deserialize(self, value, attr, data, **kwargs):
         # Replace empty string or None with the default tolerance value
         if value == "" or value is None:
             value = self.default_tolerance
@@ -48,6 +47,61 @@ class SETOFCOMPLEXVECTORS(ma.fields.List):
     """Field for a set of vectors of complex numbers."""
     def __init__(self, **metadata):
         super().__init__(COMPLEXVECTOR(), **metadata)
+
+# Tests for TOLERANCE
+
+def test_tolerance_valid():
+    """Test valid tolerance values."""
+    class MySchema(ma.Schema):
+        tolerance = TOLERANCE(default_tolerance=1e-5)
+
+    schema = MySchema()
+
+    input_data = {"tolerance": 0.01}
+    output_data = {"tolerance": 0.01}
+
+    result = schema.load(input_data)
+    assert result == output_data, f"Unexpected result: {result}"
+
+def test_tolerance_empty_string():
+    """Test tolerance with an empty string."""
+    class MySchema(ma.Schema):
+        tolerance = TOLERANCE(default_tolerance=1e-5)
+
+    schema = MySchema()
+
+    input_data = {"tolerance": ""}
+    output_data = {"tolerance": 1e-5}
+
+    result = schema.load(input_data)
+    assert result == output_data, f"Unexpected result: {result}"
+
+def test_tolerance_invalid_type():
+    """Test tolerance with invalid input type."""
+    class MySchema(ma.Schema):
+        tolerance = TOLERANCE(default_tolerance=1e-5)
+
+    schema = MySchema()
+
+    input_data = {"tolerance": "invalid"}
+
+    try:
+        schema.load(input_data)
+    except ma.ValidationError as e:
+        assert "Not a valid number." in str(e), f"Unexpected error: {e}"
+
+def test_tolerance_missing_field():
+    """Test when tolerance field is missing."""
+    class MySchema(ma.Schema):
+        tolerance = TOLERANCE(default_tolerance=1e-5)
+
+    schema = MySchema()
+
+    input_data = {}
+    output_data = {"tolerance": 1e-5}
+
+    result = schema.load(input_data)
+    assert result == output_data, f"Unexpected result: {result}"
 
 # Tests for COMPLEXNUMBER
 
@@ -299,7 +353,14 @@ def test_setcomplexvectors_field_invalid_structure():
 
 # Run tests
 if __name__ == "__main__":
+
+    # Tests for TOLERANCE
+    test_tolerance_missing_field()
+    test_tolerance_valid()
+    test_tolerance_empty_string()
+    test_tolerance_invalid_type()
     
+
     # Tests for COMPLEXNUMBER
     test_complexnumber_field_valid()
     test_complexnumber_field_invalid_structure()
