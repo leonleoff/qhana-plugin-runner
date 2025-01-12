@@ -15,15 +15,8 @@ class TOLERANCE(ma.fields.Float):
         return super()._validated(value)
 
 
-class COMPLEXNUMBER(ma.fields.Field):
-    def _validated(self, value):
-        raise ma.ValidationError("LOL")
-        # Replace empty string or None with the default tolerance value
-        if value == "" or value is None:
-            value = self.default_tolerance
-        return super()._validated(value)
+class COMPLEXNUMBER(ma.fields.Float):
     
-
     def _deserialize(self, value, attr, data, **kwargs):
         # Überprüfen, ob der Wert ein Array (Liste oder Tupel) ist
         if not isinstance(value, (list, tuple)):
