@@ -15,7 +15,7 @@ class TOLERANCE(ma.fields.Float):
         return super()._validated(value)
 
 
-class COMPLEXNUMBER(ma.fields.Float):
+class COMPLEXNUMBER(ma.fields.Field):
     
     def _deserialize(self, value, attr, data, **kwargs):
         # Überprüfen, ob der Wert ein Array (Liste oder Tupel) ist
@@ -38,10 +38,10 @@ class COMPLEXNUMBER(ma.fields.Float):
             )
 
 
-class COMPLEXVECTORSField(ma.fields.List):
+class COMPLEXVECTOR(ma.fields.List):
     """Field for vectors of complex numbers."""
     def __init__(self, **metadata):
-        super().__init__(COMPLEXNUMBERField(), **metadata)
+        super().__init__(COMPLEXNUMBER(), **metadata)
 
 
 class SETOFCOMPLEXVECTORSField(ma.fields.List):
