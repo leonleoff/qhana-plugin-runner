@@ -1,22 +1,23 @@
-from tempfile import SpooledTemporaryFile
-
-from typing import Optional
 from json import loads
-
-from celery.utils.log import get_task_logger
+from tempfile import SpooledTemporaryFile
+from typing import Optional
 
 import numpy as np
-
-from .algorithm import are_vectors_orthogonal
-from . import ClassicalStateAnalysisOrthogonality
+from celery.utils.log import get_task_logger
 from qhana_plugin_runner.celery import CELERY
 from qhana_plugin_runner.db.models.tasks import ProcessingTask
-
 from qhana_plugin_runner.storage import STORE
+
+from . import ClassicalStateAnalysisOrthogonality
+from .algorithm import are_vectors_orthogonal
 
 TASK_LOGGER = get_task_logger(__name__)
 
-@CELERY.task(name=f"{ClassicalStateAnalysisOrthogonality.instance.identifier}.orthogonality_task", bind=True)
+
+@CELERY.task(
+    name=f"{ClassicalStateAnalysisOrthogonality.instance.identifier}.orthogonality_task",
+    bind=True,
+)
 def orthogonality_task(self, db_id: int) -> str:
     TASK_LOGGER.info(f"Starting orthogonality task with db id '{db_id}'")
     task_data = ProcessingTask.get_by_id(id_=db_id)
@@ -31,14 +32,18 @@ def orthogonality_task(self, db_id: int) -> str:
     vector2 = parameters.get("vector2", [])
     tolerance = parameters.get("tolerance", 1e-10)
 
-    TASK_LOGGER.info(f"Parameters: vector1={vector1}, vector2={vector2}, tolerance={tolerance}")
+    TASK_LOGGER.info(
+        f"Parameters: vector1={vector1}, vector2={vector2}, tolerance={tolerance}"
+    )
 
     try:
         vec1 = np.array(vector1, dtype=float)
         vec2 = np.array(vector2, dtype=float)
 
-        result = are_vectors_orthogonal(vec1,vec2,tolerance)
-        output_message = "Vectors are orthogonal." if result else "Vectors are not orthogonal."
+        result = are_vectors_orthogonal(vec1, vec2, tolerance)
+        output_message = (
+            "Vectors are orthogonal." if result else "Vectors are not orthogonal."
+        )
 
         # Speichere das Ergebnis als Datei
         with SpooledTemporaryFile(mode="w") as output:

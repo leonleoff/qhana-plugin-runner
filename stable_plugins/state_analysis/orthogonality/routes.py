@@ -10,7 +10,6 @@ from flask.helpers import url_for
 from flask.templating import render_template
 from flask.views import MethodView
 from marshmallow import EXCLUDE
-
 from qhana_plugin_runner.api.plugin_schemas import (
     DataMetadata,
     EntryPoint,
@@ -29,6 +28,7 @@ from qhana_plugin_runner.tasks import (
 from . import CLASSICAL_ANALYSIS_ORTHOGONALITY_BLP, ClassicalStateAnalysisOrthogonality
 from .schemas import ClassicalStateAnalysisOrthogonalityParametersSchema
 from .tasks import orthogonality_task
+
 
 @CLASSICAL_ANALYSIS_ORTHOGONALITY_BLP.route("/")
 class PluginsView(MethodView):
@@ -49,7 +49,9 @@ class PluginsView(MethodView):
             type=PluginType.processing,
             entry_point=EntryPoint(
                 href=url_for(f"{CLASSICAL_ANALYSIS_ORTHOGONALITY_BLP.name}.ProcessView"),
-                ui_href=url_for(f"{CLASSICAL_ANALYSIS_ORTHOGONALITY_BLP.name}.MicroFrontend"),
+                ui_href=url_for(
+                    f"{CLASSICAL_ANALYSIS_ORTHOGONALITY_BLP.name}.MicroFrontend"
+                ),
                 plugin_dependencies=[],
                 data_input=[
                     DataMetadata(
@@ -75,18 +77,18 @@ class MicroFrontend(MethodView):
     """Micro frontend for the classical orthogonality state analysis plugin."""
 
     example_inputs = {
-    "inputJson": (
-        '{\n'
-        '    "vector1": [1.0, 0.0, 3.5],\n'
-        '    "vector2": [0.0, 1.0, -3.5],\n'
-        '    "tolerance": 1e-10\n'
-        '}'
-    )
+        "inputJson": (
+            "{\n"
+            '    "vector1": [1.0, 0.0, 3.5],\n'
+            '    "vector2": [0.0, 1.0, -3.5],\n'
+            '    "tolerance": 1e-10\n'
+            "}"
+        )
     }
 
-
     @CLASSICAL_ANALYSIS_ORTHOGONALITY_BLP.html_response(
-        HTTPStatus.OK, description="Micro frontend of the classical orthogonality state analysis plugin."
+        HTTPStatus.OK,
+        description="Micro frontend of the classical orthogonality state analysis plugin.",
     )
     @CLASSICAL_ANALYSIS_ORTHOGONALITY_BLP.arguments(
         ClassicalStateAnalysisOrthogonalityParametersSchema(
@@ -101,7 +103,8 @@ class MicroFrontend(MethodView):
         return self.render(request.args, errors, False)
 
     @CLASSICAL_ANALYSIS_ORTHOGONALITY_BLP.html_response(
-        HTTPStatus.OK, description="Micro frontend of the classical orthogonality state analysis plugin."
+        HTTPStatus.OK,
+        description="Micro frontend of the classical orthogonality state analysis plugin.",
     )
     @CLASSICAL_ANALYSIS_ORTHOGONALITY_BLP.arguments(
         ClassicalStateAnalysisOrthogonalityParametersSchema(
@@ -136,29 +139,39 @@ class MicroFrontend(MethodView):
                 values=data,
                 errors=errors,
                 result=result,
-                process=url_for(f"{CLASSICAL_ANALYSIS_ORTHOGONALITY_BLP.name}.ProcessView"),
+                process=url_for(
+                    f"{CLASSICAL_ANALYSIS_ORTHOGONALITY_BLP.name}.ProcessView"
+                ),
                 help_text="Provide two vectors and a tolerance to check their orthogonality.",
                 example_values=url_for(
-                    f"{CLASSICAL_ANALYSIS_ORTHOGONALITY_BLP.name}.MicroFrontend", **self.example_inputs
+                    f"{CLASSICAL_ANALYSIS_ORTHOGONALITY_BLP.name}.MicroFrontend",
+                    **self.example_inputs,
                 ),
             )
-    )
+        )
 
 
 @CLASSICAL_ANALYSIS_ORTHOGONALITY_BLP.route("/process/")
 class ProcessView(MethodView):
     """Start a long running processing task."""
 
-    @CLASSICAL_ANALYSIS_ORTHOGONALITY_BLP.arguments(ClassicalStateAnalysisOrthogonalityParametersSchema(unknown=EXCLUDE), location="form")
+    @CLASSICAL_ANALYSIS_ORTHOGONALITY_BLP.arguments(
+        ClassicalStateAnalysisOrthogonalityParametersSchema(unknown=EXCLUDE),
+        location="form",
+    )
     @CLASSICAL_ANALYSIS_ORTHOGONALITY_BLP.response(HTTPStatus.SEE_OTHER)
     @CLASSICAL_ANALYSIS_ORTHOGONALITY_BLP.require_jwt("jwt", optional=True)
     def post(self, arguments):
         """Start the orthogonality analysis task."""
-        db_task = ProcessingTask(task_name=orthogonality_task.name, parameters=dumps(arguments))
+        db_task = ProcessingTask(
+            task_name=orthogonality_task.name, parameters=dumps(arguments)
+        )
         db_task.save(commit=True)
 
         # Start the task
-        task: chain = orthogonality_task.s(db_id=db_task.id) | save_task_result.s(db_id=db_task.id)
+        task: chain = orthogonality_task.s(db_id=db_task.id) | save_task_result.s(
+            db_id=db_task.id
+        )
         task.link_error(save_task_error.s(db_id=db_task.id))
         task.apply_async()
 

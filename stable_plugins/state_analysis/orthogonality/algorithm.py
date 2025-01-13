@@ -1,6 +1,9 @@
 import numpy as np
 
-def are_vectors_orthogonal(vec1: np.ndarray, vec2: np.ndarray, tolerance: float = 1e-10) -> bool:
+
+def are_vectors_orthogonal(
+    vec1: np.ndarray, vec2: np.ndarray, tolerance: float = 1e-10
+) -> bool:
     """
     Checks whether two NumPy vectors are orthogonal by calculating their dot product using a for loop.
 
@@ -15,7 +18,7 @@ def are_vectors_orthogonal(vec1: np.ndarray, vec2: np.ndarray, tolerance: float 
     # Ensure the vectors have the same length
     if len(vec1) != len(vec2):
         raise ValueError("Vectors must have the same dimension.")
-    
+
     # Initialize the dot product
     dot_product = 0.0
 
