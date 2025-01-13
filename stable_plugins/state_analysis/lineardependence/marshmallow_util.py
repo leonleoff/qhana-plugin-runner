@@ -1,13 +1,21 @@
-import marshmallow as ma
 import json
+
+import marshmallow as ma
 
 
 class TOLERANCE(ma.fields.Float):
     """A Float field with a default value when an empty string is provided."""
 
-    def __init__(self, *, default_tolerance: float, allow_nan: bool = False, as_string: bool = False, **kwargs):
+    def __init__(
+        self,
+        *,
+        default_tolerance: float,
+        allow_nan: bool = False,
+        as_string: bool = False,
+        **kwargs,
+    ):
         self.default_tolerance = default_tolerance
-        super().__init__(as_string=as_string, **kwargs  ,missing = default_tolerance )
+        super().__init__(as_string=as_string, **kwargs, missing=default_tolerance)
 
     def _deserialize(self, value, attr, data, **kwargs):
         # Replace empty string or None with the default tolerance value
@@ -21,12 +29,12 @@ class COMPLEXNUMBER(ma.fields.Field):
     def _deserialize(self, value, attr, data, **kwargs):
         # Check if the value is a string and try to parse it into a list or tuple
         if isinstance(value, str):
-                try:
-                    value = json.loads(value)
-                except json.JSONDecodeError:
-                    raise ma.ValidationError(
-                        f"Invalid input. Expected a JSON string representing a list or tuple, but the input string could not be parsed: {value}"
-                    )
+            try:
+                value = json.loads(value)
+            except json.JSONDecodeError:
+                raise ma.ValidationError(
+                    f"Invalid input. Expected a JSON string representing a list or tuple, but the input string could not be parsed: {value}"
+                )
 
         # Check if the value is an array (list or tuple)
         if not isinstance(value, (list, tuple)):
@@ -80,6 +88,7 @@ class COMPLEXVECTOR(ma.fields.Field):
 
         return output
 
+
 class SETOFCOMPLEXVECTORS(ma.fields.Field):
 
     def _deserialize(self, value, attr, data, **kwargs):
@@ -110,4 +119,3 @@ class SETOFCOMPLEXVECTORS(ma.fields.Field):
                 )
 
         return output
-

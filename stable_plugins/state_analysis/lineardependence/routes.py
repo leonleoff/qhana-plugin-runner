@@ -10,7 +10,6 @@ from flask.helpers import url_for
 from flask.templating import render_template
 from flask.views import MethodView
 from marshmallow import EXCLUDE
-
 from qhana_plugin_runner.api.plugin_schemas import (
     DataMetadata,
     EntryPoint,
@@ -26,15 +25,21 @@ from qhana_plugin_runner.tasks import (
     save_task_result,
 )
 
-from . import CLASSICAL_ANALYSIS_LINEARDEPENDENCE_BLP, ClassicalStateAnalysisLineardependence
+from . import (
+    CLASSICAL_ANALYSIS_LINEARDEPENDENCE_BLP,
+    ClassicalStateAnalysisLineardependence,
+)
 from .schemas import ClassicalStateAnalysisLineardependenceParametersSchema
 from .tasks import lineardependence_task
+
 
 @CLASSICAL_ANALYSIS_LINEARDEPENDENCE_BLP.route("/")
 class PluginsView(MethodView):
     """Plugins collection resource."""
 
-    @CLASSICAL_ANALYSIS_LINEARDEPENDENCE_BLP.response(HTTPStatus.OK, PluginMetadataSchema())
+    @CLASSICAL_ANALYSIS_LINEARDEPENDENCE_BLP.response(
+        HTTPStatus.OK, PluginMetadataSchema()
+    )
     @CLASSICAL_ANALYSIS_LINEARDEPENDENCE_BLP.require_jwt("jwt", optional=True)
     def get(self):
         """Endpoint returning the plugin metadata."""
@@ -48,8 +53,12 @@ class PluginsView(MethodView):
             version=plugin.version,
             type=PluginType.processing,
             entry_point=EntryPoint(
-                href=url_for(f"{CLASSICAL_ANALYSIS_LINEARDEPENDENCE_BLP.name}.ProcessView"),
-                ui_href=url_for(f"{CLASSICAL_ANALYSIS_LINEARDEPENDENCE_BLP.name}.MicroFrontend"),
+                href=url_for(
+                    f"{CLASSICAL_ANALYSIS_LINEARDEPENDENCE_BLP.name}.ProcessView"
+                ),
+                ui_href=url_for(
+                    f"{CLASSICAL_ANALYSIS_LINEARDEPENDENCE_BLP.name}.MicroFrontend"
+                ),
                 plugin_dependencies=[],
                 data_input=[
                     DataMetadata(
@@ -74,18 +83,19 @@ class PluginsView(MethodView):
 class MicroFrontend(MethodView):
     """Micro frontend for the classical lineardependence state analysis plugin."""
 
+    vectors = [
+        [[5.0, 0.0], [0.0, 0.0], [0.0, 0.0]],
+        [[0.0, 0.0], [0.0, 1.0], [0.0, 0.0]],
+        [[0.0, 0.0], [0.0, 0.0], [1.0, 0.0]],
+    ]
     example_inputs = {
-    "inputJson": (
-        '{\n'
-        '    "vectors": [[1.0, 0.0, 3.5], [0.0, 1.0, -3.5], [2.0, 1.0, 0.0]],\n'
-        '    "tolerance": 1e-10\n'
-        '}'
-    )
+        "vectors": f"{vectors}",
+        "tolerance": "0",
     }
 
-
     @CLASSICAL_ANALYSIS_LINEARDEPENDENCE_BLP.html_response(
-        HTTPStatus.OK, description="Micro frontend of the classical lineardependence state analysis plugin."
+        HTTPStatus.OK,
+        description="Micro frontend of the classical lineardependence state analysis plugin.",
     )
     @CLASSICAL_ANALYSIS_LINEARDEPENDENCE_BLP.arguments(
         ClassicalStateAnalysisLineardependenceParametersSchema(
@@ -100,7 +110,8 @@ class MicroFrontend(MethodView):
         return self.render(request.args, errors, False)
 
     @CLASSICAL_ANALYSIS_LINEARDEPENDENCE_BLP.html_response(
-        HTTPStatus.OK, description="Micro frontend of the classical lineardependence state analysis plugin."
+        HTTPStatus.OK,
+        description="Micro frontend of the classical lineardependence state analysis plugin.",
     )
     @CLASSICAL_ANALYSIS_LINEARDEPENDENCE_BLP.arguments(
         ClassicalStateAnalysisLineardependenceParametersSchema(
@@ -135,29 +146,39 @@ class MicroFrontend(MethodView):
                 values=data,
                 errors=errors,
                 result=result,
-                process=url_for(f"{CLASSICAL_ANALYSIS_LINEARDEPENDENCE_BLP.name}.ProcessView"),
+                process=url_for(
+                    f"{CLASSICAL_ANALYSIS_LINEARDEPENDENCE_BLP.name}.ProcessView"
+                ),
                 help_text="Provide two vectors and a tolerance to check their lineardependence.",
                 example_values=url_for(
-                    f"{CLASSICAL_ANALYSIS_LINEARDEPENDENCE_BLP.name}.MicroFrontend", **self.example_inputs
+                    f"{CLASSICAL_ANALYSIS_LINEARDEPENDENCE_BLP.name}.MicroFrontend",
+                    **self.example_inputs,
                 ),
             )
-    )
+        )
 
 
 @CLASSICAL_ANALYSIS_LINEARDEPENDENCE_BLP.route("/process/")
 class ProcessView(MethodView):
     """Start a long running processing task."""
 
-    @CLASSICAL_ANALYSIS_LINEARDEPENDENCE_BLP.arguments(ClassicalStateAnalysisLineardependenceParametersSchema(unknown=EXCLUDE), location="form")
+    @CLASSICAL_ANALYSIS_LINEARDEPENDENCE_BLP.arguments(
+        ClassicalStateAnalysisLineardependenceParametersSchema(unknown=EXCLUDE),
+        location="form",
+    )
     @CLASSICAL_ANALYSIS_LINEARDEPENDENCE_BLP.response(HTTPStatus.SEE_OTHER)
     @CLASSICAL_ANALYSIS_LINEARDEPENDENCE_BLP.require_jwt("jwt", optional=True)
     def post(self, arguments):
         """Start the lineardependence analysis task."""
-        db_task = ProcessingTask(task_name=lineardependence_task.name, parameters=dumps(arguments))
+        db_task = ProcessingTask(
+            task_name=lineardependence_task.name, parameters=dumps(arguments)
+        )
         db_task.save(commit=True)
 
         # Start the task
-        task: chain = lineardependence_task.s(db_id=db_task.id) | save_task_result.s(db_id=db_task.id)
+        task: chain = lineardependence_task.s(db_id=db_task.id) | save_task_result.s(
+            db_id=db_task.id
+        )
         task.link_error(save_task_error.s(db_id=db_task.id))
         task.apply_async()
 

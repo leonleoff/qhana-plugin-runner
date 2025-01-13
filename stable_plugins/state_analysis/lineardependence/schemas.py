@@ -1,6 +1,8 @@
 import marshmallow as ma
 from qhana_plugin_runner.api.util import FrontendFormBaseSchema
-from .marshmallow_util import TOLERANCE, SETOFCOMPLEXVECTORS, COMPLEXVECTOR, COMPLEXNUMBER
+
+from .marshmallow_util import SETOFCOMPLEXVECTORS, TOLERANCE
+
 
 class ClassicalStateAnalysisLineardependenceParametersSchema(FrontendFormBaseSchema):
     """Schema for classical state analysis of linear dependence."""
@@ -29,6 +31,7 @@ class ClassicalStateAnalysisLineardependenceParametersSchema(FrontendFormBaseSch
         },
     )
 
+
 @ma.post_load
 def validate_data(self, data, **kwargs):
     try:
@@ -37,26 +40,25 @@ def validate_data(self, data, **kwargs):
             raise ma.ValidationError("Input data must be a dictionary.")
 
         # Überprüfe, ob 'vectors' im Dictionary enthalten ist
-        if 'vectors' not in data:
+        if "vectors" not in data:
             raise ma.ValidationError("Input data must contain a 'vectors' key.")
 
         # Überprüfe, ob 'tolerance' im Dictionary enthalten ist
-        if 'tolerance' not in data:
+        if "tolerance" not in data:
             raise ma.ValidationError("Input data must contain a 'tolerance' key.")
 
         # Extrahiere die Vektoren
-        vectors = data['vectors']
+        vectors = data["vectors"]
 
         # Konvertiere jede Liste von Vektoren in komplexe Zahlen
         processed_data = [
-            [complex(real, imag) for real, imag in vector]
-            for vector in vectors
+            [complex(real, imag) for real, imag in vector] for vector in vectors
         ]
 
         # Optional: Füge die Toleranz in die Rückgabe ein
-        tolerance = data['tolerance']
+        tolerance = data["tolerance"]
         return {"processed_vectors": processed_data, "tolerance": tolerance}
-    
+
     except ValueError as e:
         raise ma.ValidationError(f"Invalid vector format in data: {data}. Error: {e}")
     except Exception as e:

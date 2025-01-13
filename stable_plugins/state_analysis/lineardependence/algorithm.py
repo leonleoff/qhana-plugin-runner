@@ -1,6 +1,9 @@
 import numpy as np
 
-def are_vectors_linearly_dependent(vectors: list[np.ndarray], tolerance: float = 1e-10) -> bool:
+
+def are_vectors_linearly_dependent(
+    vectors: list[np.ndarray], tolerance: float = 1e-10
+) -> bool:
     """
     Checks if a list of vectors is linearly dependent.
 
