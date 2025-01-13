@@ -1,4 +1,5 @@
 import marshmallow as ma
+import json
 # Note: To make this import work, you may need to set the PYTHONPATH environment variable.
 # Example (in PowerShell): $env:PYTHONPATH="Path/to/qhana-plugin-runner"
 from qhana_plugin_runner.api.util import FrontendFormBaseSchema
@@ -21,18 +22,27 @@ class TOLERANCE(ma.fields.Float):
 class COMPLEXNUMBER(ma.fields.Field):
 
     def _deserialize(self, value, attr, data, **kwargs):
-        # Überprüfen, ob der Wert ein Array (Liste oder Tupel) ist
+        # Check if the value is a string and try to parse it into a list or tuple
+        if isinstance(value, str):
+            try:
+                value = json.loads(value)
+            except json.JSONDecodeError:
+                raise ma.ValidationError(
+                    f"Invalid input. Expected a JSON string representing a list or tuple, but the input string could not be parsed: {value}"
+                )
+
+        # Check if the value is an array (list or tuple)
         if not isinstance(value, (list, tuple)):
             raise ma.ValidationError(
                 f"Invalid input. Expected a list or tuple with two elements: [real, imag]. But the input was {value}"
             )
-        # Sicherstellen, dass das Array genau zwei Elemente hat
+        # Ensure the array has exactly two elements
         if len(value) != 2:
             raise ma.ValidationError(
                 f"Invalid input length. Expected two elements: [real, imag]. But the input was {value}"
             )
         try:
-            # Versuche, die Werte in Floats zu konvertieren
+            # Attempt to convert the values to floats
             real, imag = float(value[0]), float(value[1])
             return complex(real, imag)
         except (ValueError, TypeError):
@@ -117,6 +127,19 @@ def test_complexnumber_field_valid():
     schema = MySchema()
 
     input_data = {"complexNumber": [2.0, 1.0]}
+    output_data = {"complexNumber": complex(2.0, 1.0)}
+    result = schema.load(input_data)
+    assert result == output_data, f"Unexpected result: {result}"
+
+# Test for COMPLEXNUMBER
+def test_complexnumber_field_string_input():
+    """Test a valid complex number provided as a JSON string."""
+    class MySchema(ma.Schema):
+        complexNumber = COMPLEXNUMBER(required=True)
+
+    schema = MySchema()
+
+    input_data = {"complexNumber": "[2.0, 1.0]"}
     output_data = {"complexNumber": complex(2.0, 1.0)}
     result = schema.load(input_data)
     assert result == output_data, f"Unexpected result: {result}"

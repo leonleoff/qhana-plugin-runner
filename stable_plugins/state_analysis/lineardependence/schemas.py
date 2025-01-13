@@ -1,18 +1,29 @@
 import marshmallow as ma
 from qhana_plugin_runner.api.util import FrontendFormBaseSchema
-from .marshmallow_util import TOLERANCE, SETOFCOMPLEXVECTORS
+from .marshmallow_util import TOLERANCE, SETOFCOMPLEXVECTORS, COMPLEXVECTOR, COMPLEXNUMBER
 
 class ClassicalStateAnalysisLineardependenceParametersSchema(FrontendFormBaseSchema):
     """Schema for classical state analysis of linear dependence."""
 
-    vectors = SETOFCOMPLEXVECTORS(
+    number = COMPLEXNUMBER(
+        required=True,
+        metadata={
+            "label": "COMPLEXNUMBER",
+            "description": (
+                ""
+                "Example: [1.0, 0.0]"
+            ),
+            "input_type": "textarea",
+        },
+    )
+
+    vectors = COMPLEXVECTOR(
         required=True,
         metadata={
             "label": "Input Vectors",
             "description": (
-                "Provide a list of vectors. Each vector must be a list of complex numbers, "
-                "where each complex number is represented as a real and imaginary part. "
-                "Example: [[[1.0, 0.0], [0.0, 1.0]], [[2.0, 1.0], [0.0, -1.0]]]"
+                ""
+                "Example: [[1.0, 0.0],[1.0, 0.0],[1.0, 0.0]]"
             ),
             "input_type": "textarea",
         },
