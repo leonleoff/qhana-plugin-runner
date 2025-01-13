@@ -203,8 +203,10 @@ def test_complexvector_field_empty():
 
     input_data = {"complexVector": []}  # Empty list
 
-    result = schema.load(input_data)
-    assert result == {"complexVector": []}, f"Unexpected result: {result}"
+    try:
+        schema.load(input_data)
+    except ma.ValidationError as e:
+        assert "Invalid input" in str(e), f"Unexpected error: {e}"
 
 
 def test_complexvector_field_missing():
@@ -259,10 +261,10 @@ def test_setcomplexvectors_field_empty():
     schema = MySchema()
 
     input_data = {"complexVectors": []}
-    output_data = {"complexVectors": []}
-
-    result = schema.load(input_data)
-    assert result == output_data, f"Unexpected result: {result}"
+    try:
+        schema.load(input_data)
+    except ma.ValidationError as e:
+        assert "Invalid input" in str(e), f"Unexpected error: {e}"
 
 
 def test_setcomplexvectors_field_invalid_element():

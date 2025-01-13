@@ -72,7 +72,13 @@ class COMPLEXVECTOR(ma.fields.Field):
         # Validate that the value is a list
         if not isinstance(value, list):
             raise ma.ValidationError(
-                f"Invalid input. Expected a list of complex number representations. But the input was {value}"
+                f"Invalid input. Expected a list of complex number representations, but the input was: {value}"
+            )
+
+        # Validate that the list is not empty
+        if not value:
+            raise ma.ValidationError(
+                "Invalid input. The list of complex number representations cannot be empty."
             )
 
         # Deserialize each complex number in the vector
@@ -90,6 +96,7 @@ class COMPLEXVECTOR(ma.fields.Field):
 
 
 class SETOFCOMPLEXVECTORS(ma.fields.Field):
+    """Field for deserializing a set of complex vectors."""
 
     def _deserialize(self, value, attr, data, **kwargs):
         # Check if the value is a string and try to parse it into a list or tuple
@@ -104,10 +111,16 @@ class SETOFCOMPLEXVECTORS(ma.fields.Field):
         # Validate that the value is a list
         if not isinstance(value, list):
             raise ma.ValidationError(
-                f"Invalid input. Expected a list of complex vector representations. But the input was {value}"
+                f"Invalid input. Expected a list of complex vector representations, but the input was: {value}"
             )
 
-        # Deserialize each complex number in the vector
+        # Validate that the list is not empty
+        if not value:
+            raise ma.ValidationError(
+                "Invalid input. The list of complex vectors cannot be empty."
+            )
+
+        # Validate that each vector is non-empty
         output = []
         for comp_vec in value:
             try:
