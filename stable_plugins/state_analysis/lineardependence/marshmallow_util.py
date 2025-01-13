@@ -24,12 +24,12 @@ class COMPLEXNUMBER(ma.fields.Field):
     def _deserialize(self, value, attr, data, **kwargs):
         # Check if the value is a string and try to parse it into a list or tuple
         if isinstance(value, str):
-            try:
-                value = json.loads(value)
-            except json.JSONDecodeError:
-                raise ma.ValidationError(
-                    f"Invalid input. Expected a JSON string representing a list or tuple, but the input string could not be parsed: {value}"
-                )
+                try:
+                    value = json.loads(value)
+                except json.JSONDecodeError:
+                    raise ma.ValidationError(
+                        f"Invalid input. Expected a JSON string representing a list or tuple, but the input string could not be parsed: {value}"
+                    )
 
         # Check if the value is an array (list or tuple)
         if not isinstance(value, (list, tuple)):
@@ -51,16 +51,68 @@ class COMPLEXNUMBER(ma.fields.Field):
             )
 
 
-class COMPLEXVECTOR(ma.fields.List):
-    """Field for vectors of complex numbers."""
-    def __init__(self, **metadata):
-        super().__init__(COMPLEXNUMBER(), **metadata)
+class COMPLEXVECTOR(ma.fields.Field):
+    """Field for deserializing a vector of complex numbers."""
 
+    def _deserialize(self, value, attr, data, **kwargs):
+        # Check if the value is a string and try to parse it into a list or tuple
+        if isinstance(value, str):
+            try:
+                value = json.loads(value)
+            except json.JSONDecodeError:
+                raise ma.ValidationError(
+                    f"Invalid input. Expected a JSON string representing a list or tuple, but the input string could not be parsed: {value}"
+                )
 
-class SETOFCOMPLEXVECTORS(ma.fields.List):
-    """Field for a set of vectors of complex numbers."""
-    def __init__(self, **metadata):
-        super().__init__(COMPLEXVECTOR(), **metadata)
+        # Validate that the value is a list
+        if not isinstance(value, list):
+            raise ma.ValidationError(
+                f"Invalid input. Expected a list of complex number representations. But the input was {value}"
+            )
+
+        # Deserialize each complex number in the vector
+        output = []
+        for comp_num in value:
+            try:
+                deserialized_num = COMPLEXNUMBER().deserialize(comp_num)
+                output.append(deserialized_num)
+            except ma.ValidationError as e:
+                raise ma.ValidationError(
+                    f"Invalid complex number in vector: {comp_num}. Error: {e.messages}"
+                )
+
+        return output
+
+class SETOFCOMPLEXVECTORS(ma.fields.Field):
+
+    def _deserialize(self, value, attr, data, **kwargs):
+        # Check if the value is a string and try to parse it into a list or tuple
+        if isinstance(value, str):
+            try:
+                value = json.loads(value)
+            except json.JSONDecodeError:
+                raise ma.ValidationError(
+                    f"Invalid input. Expected a JSON string representing a list or tuple, but the input string could not be parsed: {value}"
+                )
+
+        # Validate that the value is a list
+        if not isinstance(value, list):
+            raise ma.ValidationError(
+                f"Invalid input. Expected a list of complex number representations. But the input was {value}"
+            )
+
+        # Deserialize each complex number in the vector
+        output = []
+        for comp_vec in value:
+            try:
+                deserialized_vec = COMPLEXVECTOR().deserialize(comp_vec)
+                output.append(deserialized_vec)
+            except ma.ValidationError as e:
+                raise ma.ValidationError(
+                    f"Invalid complex vector in set: {comp_vec}. Error: {e.messages}"
+                )
+
+        return output
 
 # Tests for TOLERANCE
 
@@ -393,6 +445,7 @@ if __name__ == "__main__":
     test_complexnumber_field_invalid_structure()
     test_complexnumber_field_invalid_types()
     test_complexnumber_field_missing_field()
+    test_complexnumber_field_string_input()
 
     # Tests for COMPLEXVECTOR
     test_complexvector_field_valid()

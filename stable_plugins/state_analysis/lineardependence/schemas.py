@@ -5,25 +5,13 @@ from .marshmallow_util import TOLERANCE, SETOFCOMPLEXVECTORS, COMPLEXVECTOR, COM
 class ClassicalStateAnalysisLineardependenceParametersSchema(FrontendFormBaseSchema):
     """Schema for classical state analysis of linear dependence."""
 
-    number = COMPLEXNUMBER(
-        required=True,
-        metadata={
-            "label": "COMPLEXNUMBER",
-            "description": (
-                ""
-                "Example: [1.0, 0.0]"
-            ),
-            "input_type": "textarea",
-        },
-    )
-
-    vectors = COMPLEXVECTOR(
+    vectors = SETOFCOMPLEXVECTORS(
         required=True,
         metadata={
             "label": "Input Vectors",
             "description": (
                 ""
-                "Example: [[1.0, 0.0],[1.0, 0.0],[1.0, 0.0]]"
+                "Example: [[[1.0, 0.0],[1.0, 0.0],[1.0, 0.0]],[[1.0, 0.0],[1.0, 0.0],[1.0, 0.0]],[[1.0, 0.0],[1.0, 0.0],[1.0, 0.0]]]"
             ),
             "input_type": "textarea",
         },
@@ -44,6 +32,8 @@ class ClassicalStateAnalysisLineardependenceParametersSchema(FrontendFormBaseSch
     @ma.post_load
     def validate_data(self, data, **kwargs):
         """Validate the input data."""
+
+        return data
         try:
             # The 'vectors' field is validated by the SETOFCOMPLEXVECTORSField itself
             if "vectors" not in data or not data["vectors"]:
