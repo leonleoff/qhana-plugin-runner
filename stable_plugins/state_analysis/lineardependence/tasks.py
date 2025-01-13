@@ -33,11 +33,9 @@ def lineardependence_task(self, db_id: int) -> str:
         # Call the function to check linear dependence
         result = are_vectors_linearly_dependent(vectors=numpy_vectors, tolerance=tolerance)
 
-        output_message = "Vectors are linearly dependent." if result else "Vectors are not linearly dependent."
-
         # Save the result as a file
         with SpooledTemporaryFile(mode="w") as output:
-            output.write(output_message)
+            output.write(f"{result}")
             output.seek(0)  # Reset file pointer
             STORE.persist_task_result(
                 db_id,
@@ -47,7 +45,7 @@ def lineardependence_task(self, db_id: int) -> str:
                 "text/plain",  # Content-Type
             )
 
-        return output_message
+        return f"{result}"
 
     except Exception as e:
         TASK_LOGGER.error(f"Error in lineardependence task: {e}")
