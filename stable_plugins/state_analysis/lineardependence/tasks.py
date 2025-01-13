@@ -1,17 +1,23 @@
+from json import loads
 from tempfile import SpooledTemporaryFile
 from typing import Optional
-from json import loads
-from celery.utils.log import get_task_logger
+
 import numpy as np
-from .algorithm import are_vectors_linearly_dependent
-from . import ClassicalStateAnalysisLineardependence
+from celery.utils.log import get_task_logger
 from qhana_plugin_runner.celery import CELERY
 from qhana_plugin_runner.db.models.tasks import ProcessingTask
 from qhana_plugin_runner.storage import STORE
 
+from . import ClassicalStateAnalysisLineardependence
+from .algorithm import are_vectors_linearly_dependent
+
 TASK_LOGGER = get_task_logger(__name__)
 
-@CELERY.task(name=f"{ClassicalStateAnalysisLineardependence.instance.identifier}.lineardependence_task", bind=True)
+
+@CELERY.task(
+    name=f"{ClassicalStateAnalysisLineardependence.instance.identifier}.lineardependence_task",
+    bind=True,
+)
 def lineardependence_task(self, db_id: int) -> str:
     TASK_LOGGER.info(f"Starting lineardependence task with db id '{db_id}'")
     task_data = ProcessingTask.get_by_id(id_=db_id)
@@ -31,7 +37,9 @@ def lineardependence_task(self, db_id: int) -> str:
         numpy_vectors = [np.array(vector, dtype=complex) for vector in vectors]
 
         # Call the function to check linear dependence
-        result = are_vectors_linearly_dependent(vectors=numpy_vectors, tolerance=tolerance)
+        result = are_vectors_linearly_dependent(
+            vectors=numpy_vectors, tolerance=tolerance
+        )
 
         # Save the result as a file
         with SpooledTemporaryFile(mode="w") as output:
