@@ -44,7 +44,7 @@ class COMPLEXNUMBER(ma.fields.Field):
         try:
             # Attempt to convert the values to floats
             real, imag = float(value[0]), float(value[1])
-            return complex(real, imag)
+            return [real, imag]
         except (ValueError, TypeError):
             raise ma.ValidationError(
                 f"Invalid numbers provided. Real and imaginary parts must be valid floats. But the input was {value}"
@@ -179,7 +179,7 @@ def test_complexnumber_field_valid():
     schema = MySchema()
 
     input_data = {"complexNumber": [2.0, 1.0]}
-    output_data = {"complexNumber": complex(2.0, 1.0)}
+    output_data = {"complexNumber": [2.0, 1.0]}
     result = schema.load(input_data)
     assert result == output_data, f"Unexpected result: {result}"
 
@@ -192,7 +192,7 @@ def test_complexnumber_field_string_input():
     schema = MySchema()
 
     input_data = {"complexNumber": "[2.0, 1.0]"}
-    output_data = {"complexNumber": complex(2.0, 1.0)}
+    output_data = {"complexNumber": [2.0, 1.0]}
     result = schema.load(input_data)
     assert result == output_data, f"Unexpected result: {result}"
 
@@ -256,9 +256,9 @@ def test_complexvector_field_valid():
 
     output_data = {
     "complexVector": [
-        complex(1.0, -2.0),
-        complex(3.5, 4.0),
-        complex(-1.5, 0.0)
+        [1.0, -2.0],
+        [3.5, 4.0],
+        [-1.5, 0.0]
     ]
     }
     
@@ -339,19 +339,19 @@ def test_setcomplexvectors_field_valid():
     output_data = {
         "complexVectors": [
             [
-                complex(1.0, -2.0),
-                complex(3.5, 4.0),
-                complex(-1.5, 0.0)
+                [1.0, -2.0],
+                [3.5, 4.0],
+                [-1.5, 0.0]
             ],
             [
-                complex(3.0, -2.0),
-                complex(5.5, 6.0),
-                complex(-1.5, 9.0)
+                [3.0, -2.0],
+                [5.5, 6.0],
+                [-1.5, 9.0]
             ],
             [
-                complex(11.0, -2.0),
-                complex(36.5, 0.0),
-                complex(-1.5, -3.0)
+                [11.0, -2.0],
+                [36.5, 0.0],
+                [-1.5, -3.0]
             ]
         ]
     }
