@@ -29,22 +29,35 @@ class ClassicalStateAnalysisLineardependenceParametersSchema(FrontendFormBaseSch
         },
     )
 
-    @ma.post_load
-    def validate_data(self, data, **kwargs):
-        """Validate the input data."""
+@ma.post_load
+def validate_data(self, data, **kwargs):
+    try:
+        # Überprüfe, ob die Eingabe ein Dictionary ist und die erforderlichen Schlüssel enthält
+        if not isinstance(data, dict):
+            raise ma.ValidationError("Input data must be a dictionary.")
 
-        return data
-        try:
-            # The 'vectors' field is validated by the SETOFCOMPLEXVECTORSField itself
-            if "vectors" not in data or not data["vectors"]:
-                raise ma.ValidationError("'vectors' field is required and cannot be empty.")
+        # Überprüfe, ob 'vectors' im Dictionary enthalten ist
+        if 'vectors' not in data:
+            raise ma.ValidationError("Input data must contain a 'vectors' key.")
 
-            # Validate 'tolerance' to ensure it's a number if present
-            if "tolerance" in data and data["tolerance"] is not None and not isinstance(data["tolerance"], (int, float)):
-                raise ma.ValidationError("'tolerance' must be a valid number.")
+        # Überprüfe, ob 'tolerance' im Dictionary enthalten ist
+        if 'tolerance' not in data:
+            raise ma.ValidationError("Input data must contain a 'tolerance' key.")
 
-            return data
-        except ma.ValidationError as e:
-            raise e
-        except Exception as e:
-            raise ma.ValidationError(f"Unexpected validation error: {str(e)}")
+        # Extrahiere die Vektoren
+        vectors = data['vectors']
+
+        # Konvertiere jede Liste von Vektoren in komplexe Zahlen
+        processed_data = [
+            [complex(real, imag) for real, imag in vector]
+            for vector in vectors
+        ]
+
+        # Optional: Füge die Toleranz in die Rückgabe ein
+        tolerance = data['tolerance']
+        return {"processed_vectors": processed_data, "tolerance": tolerance}
+    
+    except ValueError as e:
+        raise ma.ValidationError(f"Invalid vector format in data: {data}. Error: {e}")
+    except Exception as e:
+        raise ma.ValidationError(f"An unexpected error occurred: {e}")

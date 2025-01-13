@@ -28,7 +28,7 @@ def lineardependence_task(self, db_id: int) -> str:
 
     try:
         # Convert vectors to numpy arrays
-        numpy_vectors = [np.array(vector, dtype=float) for vector in vectors]
+        numpy_vectors = [np.array(vector, dtype=complex) for vector in vectors]
 
         # Call the function to check linear dependence
         result = are_vectors_linearly_dependent(vectors=numpy_vectors, tolerance=tolerance)
