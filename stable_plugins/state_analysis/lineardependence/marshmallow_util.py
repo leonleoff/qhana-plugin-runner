@@ -104,7 +104,7 @@ class SETOFCOMPLEXVECTORS(ma.fields.Field):
         # Validate that the value is a list
         if not isinstance(value, list):
             raise ma.ValidationError(
-                f"Invalid input. Expected a list of complex number representations. But the input was {value}"
+                f"Invalid input. Expected a list of complex vector representations. But the input was {value}"
             )
 
         # Deserialize each complex number in the vector

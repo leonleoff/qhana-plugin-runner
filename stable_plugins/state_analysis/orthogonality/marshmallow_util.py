@@ -72,7 +72,13 @@ class COMPLEXVECTOR(ma.fields.Field):
         # Validate that the value is a list
         if not isinstance(value, list):
             raise ma.ValidationError(
-                f"Invalid input. Expected a list of complex number representations. But the input was {value}"
+                f"Invalid input. Expected a list of complex number representations, but the input was: {value}"
+            )
+
+        # Validate that the list is not empty
+        if not value:
+            raise ma.ValidationError(
+                "Invalid input. The list of complex number representations cannot be empty."
             )
 
         # Deserialize each complex number in the vector
@@ -89,7 +95,7 @@ class COMPLEXVECTOR(ma.fields.Field):
         return output
 
 
-class SETOFCOMPLEXVECTORS(ma.fields.Field):
+class SETOFTWOCOMPLEXVECTORS(ma.fields.Field):
 
     def _deserialize(self, value, attr, data, **kwargs):
         # Check if the value is a string and try to parse it into a list or tuple
@@ -104,7 +110,13 @@ class SETOFCOMPLEXVECTORS(ma.fields.Field):
         # Validate that the value is a list
         if not isinstance(value, list):
             raise ma.ValidationError(
-                f"Invalid input. Expected a list of complex number representations. But the input was {value}"
+                f"Invalid input. Expected a list of complex vector representations. But the input was {value}"
+            )
+
+        # Validate that there are exactly two vectors in the set
+        if not len(value) == 2:
+            raise ma.ValidationError(
+                f"Invalid input. Expected a list of exactly 2 vectors, but the input was {value}."
             )
 
         # Deserialize each complex number in the vector
