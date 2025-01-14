@@ -1,7 +1,6 @@
 import marshmallow as ma
+from common.marshmallow_util import SETOFTWOCOMPLEXVECTORS, TOLERANCE
 from qhana_plugin_runner.api.util import FrontendFormBaseSchema
-
-from .marshmallow_util import SETOFTWOCOMPLEXVECTORS, TOLERANCE
 
 
 class ClassicalStateAnalysisOrthogonalityParametersSchema(FrontendFormBaseSchema):

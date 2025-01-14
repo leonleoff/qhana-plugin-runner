@@ -13,10 +13,10 @@
 # limitations under the License.
 
 from typing import Optional
-from flask import Flask
 
+from flask import Flask
 from qhana_plugin_runner.api.util import SecurityBlueprint
-from qhana_plugin_runner.util.plugins import plugin_identifier, QHAnaPluginBase
+from qhana_plugin_runner.util.plugins import QHAnaPluginBase, plugin_identifier
 
 _plugin_name = "schmidtrank_classical"
 __version__ = "v0.0.1"
@@ -29,6 +29,7 @@ CLASSICAL_ANALYSIS_SCHMIDTRANK_BLP = SecurityBlueprint(
     template_folder="classical_state_templates",
 )
 
+
 class ClassicalStateAnalysisSchmidtrank(QHAnaPluginBase):
     name = _plugin_name
     version = __version__
@@ -40,6 +41,7 @@ class ClassicalStateAnalysisSchmidtrank(QHAnaPluginBase):
 
     def get_api_blueprint(self):
         return CLASSICAL_ANALYSIS_SCHMIDTRANK_BLP
+
 
 try:
     # It is important to import the routes **after** COSTUME_LOADER_BLP and CostumeLoader are defined, because they are
