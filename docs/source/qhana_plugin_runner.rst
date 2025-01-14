@@ -1,7 +1,7 @@
 qhana\_plugin\_runner package
 =============================
 
-Subpackages
+Subpackages a
 -----------
 
 .. toctree::

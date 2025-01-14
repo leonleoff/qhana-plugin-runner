@@ -1,7 +1,6 @@
 import marshmallow as ma
+from common.marshmallow_util import SETOFCOMPLEXVECTORS, TOLERANCE
 from qhana_plugin_runner.api.util import FrontendFormBaseSchema
-
-from .marshmallow_util import SETOFCOMPLEXVECTORS, TOLERANCE
 
 
 class ClassicalStateAnalysisLineardependenceParametersSchema(FrontendFormBaseSchema):
@@ -10,7 +9,7 @@ class ClassicalStateAnalysisLineardependenceParametersSchema(FrontendFormBaseSch
     vectors = SETOFCOMPLEXVECTORS(
         required=True,
         metadata={
-            "label": "Input Vectors",
+            "label": "Input arsch Vectors",
             "description": (
                 "A set of complex vectors"
                 "Example: [[[1.0, 0.0],[1.0, 0.0],[1.0, 0.0]],[[1.0, 0.0],[1.0, 0.0],[1.0, 0.0]],[[1.0, 0.0],[1.0, 0.0],[1.0, 0.0]]]"

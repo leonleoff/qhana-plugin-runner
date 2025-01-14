@@ -3,7 +3,8 @@ import marshmallow as ma
 # Note: To make this import work, you may need to set the PYTHONPATH environment variable.
 # Example (in PowerShell): $env:PYTHONPATH="Path/to/qhana-plugin-runner"
 from qhana_plugin_runner.api.util import FrontendFormBaseSchema
-from stable_plugins.state_analysis.lineardependence.marshmallow_util import (
+
+from .marshmallow_util import (
     COMPLEXNUMBER,
     COMPLEXVECTOR,
     SETOFCOMPLEXVECTORS,
