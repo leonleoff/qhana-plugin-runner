@@ -9,7 +9,7 @@ class ClassicalStateAnalysisLineardependenceParametersSchema(FrontendFormBaseSch
     vectors = SETOFCOMPLEXVECTORS(
         required=True,
         metadata={
-            "label": "Input arsch Vectors",
+            "label": "Input Vectors",
             "description": (
                 "A set of complex vectors"
                 "Example: [[[1.0, 0.0],[1.0, 0.0],[1.0, 0.0]],[[1.0, 0.0],[1.0, 0.0],[1.0, 0.0]],[[1.0, 0.0],[1.0, 0.0],[1.0, 0.0]]]"

@@ -1,85 +1,86 @@
 import marshmallow as ma
+from common.marshmallow_util import COMPLEXVECTOR, TOLERANCE
 from qhana_plugin_runner.api.util import FrontendFormBaseSchema
 
 
 class ClassicalStateAnalysisSchmidtrankParametersSchema(FrontendFormBaseSchema):
-    input_json = ma.fields.String(
+    vector = COMPLEXVECTOR(
         required=True,
-        allow_none=False,
         metadata={
-            "label": "Input JSON",
+            "label": "Input Vector",
             "description": (
-                "Provide a JSON object with the keys 'state', 'dim_A', 'dim_B', and optionally 'tolerance'. "
-                'Example: {"state": ["0.7071067811865475+0j", "0+0j", "0+0j", "0.7071067811865475+0j"], "dim_A": 2, "dim_B": 2, "tolerance": 1e-10}'
+                "A complex vector. "
+                "Example: [[[1.0, 0.0], [1.0, 0.0], [1.0, 0.0], [1.0, 0.0]]]"
             ),
             "input_type": "textarea",
         },
     )
 
-    @ma.post_load
-    def parse_json(self, data, **kwargs):
-        """Parse the JSON input into a Python dictionary."""
-        try:
-            parsed_data = ma.utils.json.loads(data["input_json"])
+    dimA = ma.fields.Integer(
+        required=True,
+        metadata={
+            "label": "Dim A",
+            "description": ("A number specifying the dimension of A. " "Example: 2"),
+            "input_type": "text",
+        },
+    )
 
-            # Validate required keys
-            if (
-                "state" not in parsed_data
-                or "dim_A" not in parsed_data
-                or "dim_B" not in parsed_data
-            ):
-                raise ma.ValidationError(
-                    "Keys 'state', 'dim_A', and 'dim_B' are required in the JSON."
-                )
+    dimB = ma.fields.Integer(
+        required=True,
+        metadata={
+            "label": "Dim B",
+            "description": ("A number specifying the dimension of B. " "Example: 2"),
+            "input_type": "text",
+        },
+    )
 
-            # Validate state (must be a list with complex numbers as strings)
+    tolerance = TOLERANCE(
+        default_tolerance=1e-10,
+        metadata={
+            "label": "Tolerance",
+            "description": (
+                "Optional tolerance value for the analysis. " "Default: 1e-10."
+            ),
+            "input_type": "text",
+        },
+    )
 
-            def try_parse_complex(value: str):
-                try:
-                    complex(value)
-                    return True
-                except ValueError:
-                    return False
 
-            def try_parse_float(value: str):
-                try:
-                    float(value)
-                    return True
-                except ValueError:
-                    return False
+@ma.post_load
+def validate_data(self, data, **kwargs):
+    try:
+        # Check if the input is a dictionary and contains the required keys
+        if not isinstance(data, dict):
+            raise ma.ValidationError("The input data must be a dictionary.")
 
-            if not (
-                isinstance(parsed_data["state"], list)
-                and all(
-                    isinstance(val, str)
-                    and (try_parse_complex(val) or try_parse_float(val))
-                    for val in parsed_data["state"]
-                )
-            ):
-                raise ma.ValidationError(
-                    "'state' must be a list containing complex numbers as strings."
-                )
+        # Check if 'vector' is present in the dictionary
+        if "vector" not in data:
+            raise ma.ValidationError("The input data must contain a 'vector' key.")
 
-            # Validate dim_A and dim_B (must be integers)
-            if not (
-                isinstance(parsed_data["dim_A"], int)
-                and isinstance(parsed_data["dim_B"], int)
-            ):
-                raise ma.ValidationError("'dim_A' and 'dim_B' must be integers.")
+        # Extract the vector
+        vector = data["vector"]
 
-            # Validate tolerance (optional, must be a number if provided)
-            if "tolerance" in parsed_data and not isinstance(
-                parsed_data["tolerance"], (int, float)
-            ):
-                raise ma.ValidationError("'tolerance' must be a number if provided.")
+        # Convert each entry in the vector to a complex number
+        processed_vector = [complex(real, imag) for real, imag in vector]
 
-            # Validate that dim_A * dim_B equals the length of the state
-            if len(parsed_data["state"]) != parsed_data["dim_A"] * parsed_data["dim_B"]:
-                raise ma.ValidationError(
-                    "The product of 'dim_A' and 'dim_B' must match the length of 'state'."
-                )
+        # Validate dimensions
+        dimA = data.get("dimA")
+        dimB = data.get("dimB")
+        if len(processed_vector) != dimA * dimB:
+            raise ma.ValidationError(
+                "The length of the vector must match the product of dimA and dimB."
+            )
 
-            return parsed_data
+        # Optionally, include the tolerance in the output
+        tolerance = data.get("tolerance", 1e-10)
+        return {
+            "processed_vectors": processed_vector,
+            "dimA": dimA,
+            "dimB": dimB,
+            "tolerance": tolerance,
+        }
 
-        except Exception as e:
-            raise ma.ValidationError(f"Invalid JSON format: {str(e)}")
+    except ValueError as e:
+        raise ma.ValidationError(f"Invalid vector format in the data: {data}. Error: {e}")
+    except Exception as e:
+        raise ma.ValidationError(f"An unexpected error occurred: {e}")

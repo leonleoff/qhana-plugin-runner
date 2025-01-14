@@ -76,15 +76,17 @@ class PluginsView(MethodView):
 class MicroFrontend(MethodView):
     """Micro frontend for the classical schmidtrank state analysis plugin."""
 
+    vector = [
+        [0.7071067811865475, 0.0],
+        [0.0, 0.0],
+        [0.0, 0.0],
+        [0.7071067811865475, 0.0],
+    ]
     example_inputs = {
-        "inputJson": (
-            "{\n"
-            '    "state": ["0.7071067811865475+0j", "0+0j", "0+0j", "0.7071067811865475+0j"],\n'
-            '    "dim_A": 2,\n'
-            '    "dim_B": 2,\n'
-            '    "tolerance": 1e-10\n'
-            "}"
-        )
+        "vector": f"{vector}",
+        "dimA": 2,
+        "dimB": 2,
+        "tolerance": 1e-10,
     }
 
     @CLASSICAL_ANALYSIS_SCHMIDTRANK_BLP.html_response(
