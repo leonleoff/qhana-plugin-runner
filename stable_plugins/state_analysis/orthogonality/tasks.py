@@ -28,26 +28,27 @@ def orthogonality_task(self, db_id: int) -> str:
         raise KeyError(msg)
 
     parameters = loads(task_data.parameters or "{}")
-    vector1 = parameters.get("vector1", [])
-    vector2 = parameters.get("vector2", [])
+    vectors = parameters.get("vectors", [])
     tolerance = parameters.get("tolerance", 1e-10)
+
+    TASK_LOGGER.info(f"Parameters: vectors={vectors}, tolerance={tolerance}")
+
+    vector1 = vectors[0]
+    vector2 = vectors[1]
 
     TASK_LOGGER.info(
         f"Parameters: vector1={vector1}, vector2={vector2}, tolerance={tolerance}"
     )
 
     try:
-        vec1 = np.array(vector1, dtype=float)
-        vec2 = np.array(vector2, dtype=float)
+        vec1 = np.array(vector1, dtype=complex)
+        vec2 = np.array(vector2, dtype=complex)
 
         result = are_vectors_orthogonal(vec1, vec2, tolerance)
-        output_message = (
-            "Vectors are orthogonal." if result else "Vectors are not orthogonal."
-        )
 
         # Speichere das Ergebnis als Datei
         with SpooledTemporaryFile(mode="w") as output:
-            output.write(output_message)
+            output.write(f"{result}")
             output.seek(0)  # Datei-Pointer zurücksetzen
             STORE.persist_task_result(
                 db_id,
@@ -57,7 +58,7 @@ def orthogonality_task(self, db_id: int) -> str:
                 "text/plain",  # Content-Type
             )
 
-        return output_message
+        return f"{result}"
 
     except Exception as e:
         TASK_LOGGER.error(f"Error in orthogonality task: {e}")

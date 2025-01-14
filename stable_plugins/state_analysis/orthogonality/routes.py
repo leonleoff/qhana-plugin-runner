@@ -76,14 +76,14 @@ class PluginsView(MethodView):
 class MicroFrontend(MethodView):
     """Micro frontend for the classical orthogonality state analysis plugin."""
 
+    vectors = [
+        [[5.0, 0.0], [0.0, 0.0], [0.0, 0.0]],
+        [[0.0, 0.0], [0.0, 1.0], [0.0, 0.0]],
+    ]
+
     example_inputs = {
-        "inputJson": (
-            "{\n"
-            '    "vector1": [1.0, 0.0, 3.5],\n'
-            '    "vector2": [0.0, 1.0, -3.5],\n'
-            '    "tolerance": 1e-10\n'
-            "}"
-        )
+        "vectors": f"{vectors}",
+        "tolerance": "0",
     }
 
     @CLASSICAL_ANALYSIS_ORTHOGONALITY_BLP.html_response(
