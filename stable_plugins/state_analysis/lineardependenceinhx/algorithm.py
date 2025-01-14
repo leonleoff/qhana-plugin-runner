@@ -37,7 +37,7 @@ def analyze_lineardependenceinhx(
         u, s, vh = np.linalg.svd(state_matrix)
 
         # Filter basis vectors based on singular values
-        significant_indices = np.where(s > svdTolerance)[0]
+        significant_indices = np.where(s > singular_value_tolerance)[0]
         filtered_basis = u[:, significant_indices]
 
         # Collect filtered basis vectors
@@ -51,7 +51,7 @@ def analyze_lineardependenceinhx(
 
     # Check linear independence of the combined basis vectors
     if combined_basis.size > 0:
-        rank = np.linalg.matrix_rank(combined_basis, tol=lindepTolerance)
+        rank = np.linalg.matrix_rank(combined_basis, tol=linear_independence_tolerance)
         return rank < len(combined_basis)
     else:
         return False  # No vectors -> Trivial case, independent

@@ -9,7 +9,7 @@ class ClassicalStateAnalysisLineardependenceInHXParametersSchema(FrontendFormBas
         metadata={
             "label": "Input Vectors",
             "description": (
-                "A ser complex vectors. "
+                "A set of complex vectors. "
                 "Example: [[[1.0, 0.0],[1.0, 0.0],[1.0, 0.0]],[[1.0, 0.0],[1.0, 0.0],[1.0, 0.0]],[[1.0, 0.0],[1.0, 0.0],[1.0, 0.0]]]"
             ),
             "input_type": "textarea",
@@ -34,12 +34,24 @@ class ClassicalStateAnalysisLineardependenceInHXParametersSchema(FrontendFormBas
         },
     )
 
-    tolerance = TOLERANCE(
+    singularValueTolerance = TOLERANCE(
         default_tolerance=1e-10,
         metadata={
-            "label": "Tolerance",
+            "label": "Singular Value Tolerance",
             "description": (
-                "Optional tolerance value for the analysis. " "Default: 1e-10."
+                "Optional tolerance value for filtering singular values. "
+                "Default: 1e-10."
+            ),
+            "input_type": "text",
+        },
+    )
+
+    linearDependenceTolerance = TOLERANCE(
+        default_tolerance=1e-10,
+        metadata={
+            "label": "Linear Dependence Tolerance",
+            "description": (
+                "Optional tolerance value for determining matrix rank. " "Default: 1e-10."
             ),
             "input_type": "text",
         },
@@ -74,13 +86,16 @@ def validate_data(self, data, **kwargs):
                     f"The length of the vector must match the product of dimA and dimB. For vector: {vector}"
                 )
 
-        # Optionally, include the tolerance in the output
-        tolerance = data.get("tolerance", 1e-10)
+        # Extract tolerances
+        singularValueTolerance = data.get("singularValueTolerance", 1e-10)
+        linearDependenceTolerance = data.get("linearDependenceTolerance", 1e-10)
+
         return {
             "processed_vectors": processed_data,
             "dimA": dimA,
             "dimB": dimB,
-            "tolerance": tolerance,
+            "singular_value_tolerance": singularValueTolerance,
+            "linear_independence_tolerance": linearDependenceTolerance,
         }
 
     except ValueError as e:

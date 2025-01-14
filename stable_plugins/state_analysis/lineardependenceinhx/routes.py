@@ -98,10 +98,11 @@ class MicroFrontend(MethodView):
         ],
     ]
     example_inputs = {
-        "vector": f"{vectors}",
+        "vectors": f"{vectors}",
         "dimA": 2,
         "dimB": 2,
-        "tolerance": 1e-10,
+        "singularValueTolerance": 1e-10,
+        "linearDependenceTolerance": 1e-10,
     }
 
     @CLASSICAL_ANALYSIS_LINEARDEPENDENCEINHX_BLP.html_response(
