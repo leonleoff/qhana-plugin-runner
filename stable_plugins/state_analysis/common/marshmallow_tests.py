@@ -1,15 +1,26 @@
 import marshmallow as ma
-
-# Note: To make this import work, you may need to set the PYTHONPATH environment variable.
-# Example (in PowerShell): $env:PYTHONPATH="Path/to/qhana-plugin-runner"
 from qhana_plugin_runner.api.util import FrontendFormBaseSchema
-
-from .marshmallow_util import (
+from state_analysis.common.marshmallow_util import (
     COMPLEXNUMBER,
     COMPLEXVECTOR,
     SETOFCOMPLEXVECTORS,
+    SETOFTWOCOMPLEXVECTORS,
     TOLERANCE,
 )
+
+# Note: This file is for local testing of Marshmallow schemas.
+# The tests here are not executed during the runtime of the plugin runner or in CI/CD pipelines.
+#
+# To run this file locally, you need to add two paths to the PYTHONPATH environment variable:
+# 1. The path to "qhana-plugin-runner".
+# 2. The path to "stable_plugins" (where "state_analysis" is located).
+#
+# Example in PowerShell:
+# $env:PYTHONPATH="path to .../qhana-plugin-runner;path to .../qhana/qhana-plugin-runner/stable_plugins"
+#
+# After setting the PYTHONPATH, you can run this file using:
+# python -m state_analysis.common.marshmallow_tests
+
 
 # Tests for TOLERANCE
 
@@ -225,6 +236,9 @@ def test_complexvector_field_missing():
         assert "Missing data for required field." in str(e), f"Unexpected error: {e}"
 
 
+# SETOFCOMPLEXVECTORS
+
+
 def test_setcomplexvectors_field_valid():
     """Test a valid set of complex vectors."""
 
@@ -320,11 +334,175 @@ def test_setcomplexvectors_field_invalid_structure():
         assert "Invalid input" in str(e), f"Unexpected error: {e}"
 
 
+# SETOFTWOCOMPLEXVECTORS
+
+
+def test_settwocomplexvectors_field_valid():
+    """Test a valid set of complex vectors."""
+
+    class MySchema(FrontendFormBaseSchema):
+        complexVectors = SETOFTWOCOMPLEXVECTORS(required=True)
+
+    schema = MySchema()
+
+    input_data = {
+        "complexVectors": [
+            [[1.0, -2.0], [3.5, 4.0], [-1.5, 0.0]],
+            [[3.0, -2.0], [5.5, 6.0], [-1.5, 9.0]],
+        ]
+    }
+
+    output_data = {
+        "complexVectors": [
+            [[1.0, -2.0], [3.5, 4.0], [-1.5, 0.0]],
+            [[3.0, -2.0], [5.5, 6.0], [-1.5, 9.0]],
+        ]
+    }
+
+    result = schema.load(input_data)
+    assert result == output_data, f"Unexpected result: {result}"
+
+
+def test_settwocomplexvectors_field_valid():
+    """Test a valid set of complex vectors."""
+
+    class MySchema(FrontendFormBaseSchema):
+        complexVectors = SETOFTWOCOMPLEXVECTORS(required=True)
+
+    schema = MySchema()
+
+    input_data = {
+        "complexVectors": [
+            [[1.0, -2.0], [3.5, 4.0], [-1.5, 0.0]],
+            [[3.0, -2.0], [5.5, 6.0], [-1.5, 9.0]],
+        ]
+    }
+
+    output_data = {
+        "complexVectors": [
+            [[1.0, -2.0], [3.5, 4.0], [-1.5, 0.0]],
+            [[3.0, -2.0], [5.5, 6.0], [-1.5, 9.0]],
+        ]
+    }
+
+    result = schema.load(input_data)
+    assert result == output_data, f"Unexpected result: {result}"
+
+
+def test_settwocomplexvectors_field_tosmall():
+    """Test a to small set of complex vectors."""
+
+    class MySchema(FrontendFormBaseSchema):
+        complexVectors = SETOFTWOCOMPLEXVECTORS(required=True)
+
+    schema = MySchema()
+
+    input_data = {
+        "complexVectors": [
+            [[1.0, -2.0], [3.5, 4.0], [-1.5, 0.0]],
+        ]
+    }
+
+    try:
+        schema.load(input_data)
+    except ma.ValidationError as e:
+        assert "Invalid input" in str(e), f"Unexpected error: {e}"
+
+
+def test_settwocomplexvectors_field_tobig():
+    """Test a to small set of complex vectors."""
+
+    class MySchema(FrontendFormBaseSchema):
+        complexVectors = SETOFTWOCOMPLEXVECTORS(required=True)
+
+    schema = MySchema()
+
+    input_data = {
+        "complexVectors": [
+            [[1.0, -2.0], [3.5, 4.0], [-1.5, 0.0]],
+            [[1.0, -2.0], [3.5, 4.0], [-1.5, 0.0]],
+            [[1.0, -2.0], [3.5, 4.0], [-1.5, 0.0]],
+        ]
+    }
+
+    try:
+        schema.load(input_data)
+    except ma.ValidationError as e:
+        assert "Invalid input" in str(e), f"Unexpected error: {e}"
+
+
+def test_settwocomplexvectors_field_empty():
+    """Test an empty set of complex vectors."""
+
+    class MySchema(FrontendFormBaseSchema):
+        complexVectors = SETOFTWOCOMPLEXVECTORS(required=True)
+
+    schema = MySchema()
+
+    input_data = {"complexVectors": []}
+    try:
+        schema.load(input_data)
+    except ma.ValidationError as e:
+        assert "Invalid input" in str(e), f"Unexpected error: {e}"
+
+
+def test_settwocomplexvectors_field_invalid_element():
+    """Test a set of complex vectors with an invalid element."""
+
+    class MySchema(FrontendFormBaseSchema):
+        complexVectors = SETOFTWOCOMPLEXVECTORS(required=True)
+
+    schema = MySchema()
+
+    input_data = {
+        "complexVectors": [
+            [[1.0, -2.0], "invalid_element", [-1.5, 0.0]]  # Not a list or tuple
+        ]
+    }
+
+    try:
+        schema.load(input_data)
+    except ma.ValidationError as e:
+        assert "Invalid input" in str(e), f"Unexpected error: {e}"
+
+
+def test_settwocomplexvectors_field_missing():
+    """Test missing complex vectors field."""
+
+    class MySchema(FrontendFormBaseSchema):
+        complexVectors = SETOFTWOCOMPLEXVECTORS(required=True)
+
+    schema = MySchema()
+
+    input_data = {}  # Missing 'complexVectors'
+
+    try:
+        schema.load(input_data)
+    except ma.ValidationError as e:
+        assert "Missing data for required field." in str(e), f"Unexpected error: {e}"
+
+
+def test_settwocomplexvectors_field_invalid_structure():
+    """Test a set of complex vectors with an invalid structure."""
+
+    class MySchema(FrontendFormBaseSchema):
+        complexVectors = SETOFTWOCOMPLEXVECTORS(required=True)
+
+    schema = MySchema()
+
+    input_data = {"complexVectors": [[[1.0], [3.5, 4.0]]]}  # Missing imaginary part
+
+    try:
+        schema.load(input_data)
+    except ma.ValidationError as e:
+        assert "Invalid input" in str(e), f"Unexpected error: {e}"
+
+
 # Run tests
 if __name__ == "__main__":
 
     # Tests for TOLERANCE
-    # TODO: test_tolerance_missing_field()
+    test_tolerance_missing_field()
     test_tolerance_valid()
     test_tolerance_empty_string()
     test_tolerance_invalid_type()
@@ -348,5 +526,14 @@ if __name__ == "__main__":
     test_setcomplexvectors_field_invalid_element()
     test_setcomplexvectors_field_missing()
     test_setcomplexvectors_field_invalid_structure()
+
+    # Tests for SETOFTWOCOMPLEXVECTORS
+    test_settwocomplexvectors_field_valid()
+    test_settwocomplexvectors_field_empty()
+    test_settwocomplexvectors_field_invalid_element()
+    test_settwocomplexvectors_field_missing()
+    test_settwocomplexvectors_field_invalid_structure()
+    test_settwocomplexvectors_field_tosmall()
+    test_settwocomplexvectors_field_tobig()
 
     print("All tests passed.")

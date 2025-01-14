@@ -132,3 +132,17 @@ class SETOFCOMPLEXVECTORS(ma.fields.Field):
                 )
 
         return output
+
+
+class SETOFTWOCOMPLEXVECTORS(ma.fields.Field):
+
+    def _deserialize(self, value, attr, data, **kwargs):
+
+        value = SETOFCOMPLEXVECTORS().deserialize(value)
+
+        # Validate that there are exactly two vectors in the set
+        if not len(value) == 2:
+            raise ma.ValidationError(
+                f"Invalid input. Expected a list of exactly 2 vectors, but the input was {value}."
+            )
+        return value
