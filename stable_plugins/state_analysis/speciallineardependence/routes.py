@@ -10,7 +10,6 @@ from flask.helpers import url_for
 from flask.templating import render_template
 from flask.views import MethodView
 from marshmallow import EXCLUDE
-
 from qhana_plugin_runner.api.plugin_schemas import (
     DataMetadata,
     EntryPoint,
@@ -26,15 +25,21 @@ from qhana_plugin_runner.tasks import (
     save_task_result,
 )
 
-from . import CLASSICAL_ANALYSIS_SPECIALLINEARDEPENDENCE_BLP, ClassicalStateAnalysisSpeciallineardependence
+from . import (
+    CLASSICAL_ANALYSIS_SPECIALLINEARDEPENDENCE_BLP,
+    ClassicalStateAnalysisSpeciallineardependence,
+)
 from .schemas import ClassicalStateAnalysisSpeciallineardependenceParametersSchema
 from .tasks import speciallineardependence_task
+
 
 @CLASSICAL_ANALYSIS_SPECIALLINEARDEPENDENCE_BLP.route("/")
 class PluginsView(MethodView):
     """Plugins collection resource."""
 
-    @CLASSICAL_ANALYSIS_SPECIALLINEARDEPENDENCE_BLP.response(HTTPStatus.OK, PluginMetadataSchema())
+    @CLASSICAL_ANALYSIS_SPECIALLINEARDEPENDENCE_BLP.response(
+        HTTPStatus.OK, PluginMetadataSchema()
+    )
     @CLASSICAL_ANALYSIS_SPECIALLINEARDEPENDENCE_BLP.require_jwt("jwt", optional=True)
     def get(self):
         """Endpoint returning the plugin metadata."""
@@ -48,8 +53,12 @@ class PluginsView(MethodView):
             version=plugin.version,
             type=PluginType.processing,
             entry_point=EntryPoint(
-                href=url_for(f"{CLASSICAL_ANALYSIS_SPECIALLINEARDEPENDENCE_BLP.name}.ProcessView"),
-                ui_href=url_for(f"{CLASSICAL_ANALYSIS_SPECIALLINEARDEPENDENCE_BLP.name}.MicroFrontend"),
+                href=url_for(
+                    f"{CLASSICAL_ANALYSIS_SPECIALLINEARDEPENDENCE_BLP.name}.ProcessView"
+                ),
+                ui_href=url_for(
+                    f"{CLASSICAL_ANALYSIS_SPECIALLINEARDEPENDENCE_BLP.name}.MicroFrontend"
+                ),
                 plugin_dependencies=[],
                 data_input=[
                     DataMetadata(
@@ -75,19 +84,19 @@ class MicroFrontend(MethodView):
     """Micro frontend for the classical speciallineardependence state analysis plugin."""
 
     example_inputs = {
-    "inputJson": (
-        '{\n'
-        '    "state": ["0.7071067811865475+0j", "0+0j", "0+0j", "0.7071067811865475+0j"],\n'
-        '    "dim_A": 2,\n'
-        '    "dim_B": 2,\n'
-        '    "tolerance": 1e-10\n'
-        '}'
-    )
+        "inputJson": (
+            "{\n"
+            '    "state": ["0.7071067811865475+0j", "0+0j", "0+0j", "0.7071067811865475+0j"],\n'
+            '    "dim_A": 2,\n'
+            '    "dim_B": 2,\n'
+            '    "tolerance": 1e-10\n'
+            "}"
+        )
     }
 
-
     @CLASSICAL_ANALYSIS_SPECIALLINEARDEPENDENCE_BLP.html_response(
-        HTTPStatus.OK, description="Micro frontend of the classical speciallineardependence state analysis plugin."
+        HTTPStatus.OK,
+        description="Micro frontend of the classical speciallineardependence state analysis plugin.",
     )
     @CLASSICAL_ANALYSIS_SPECIALLINEARDEPENDENCE_BLP.arguments(
         ClassicalStateAnalysisSpeciallineardependenceParametersSchema(
@@ -102,7 +111,8 @@ class MicroFrontend(MethodView):
         return self.render(request.args, errors, False)
 
     @CLASSICAL_ANALYSIS_SPECIALLINEARDEPENDENCE_BLP.html_response(
-        HTTPStatus.OK, description="Micro frontend of the classical speciallineardependence state analysis plugin."
+        HTTPStatus.OK,
+        description="Micro frontend of the classical speciallineardependence state analysis plugin.",
     )
     @CLASSICAL_ANALYSIS_SPECIALLINEARDEPENDENCE_BLP.arguments(
         ClassicalStateAnalysisSpeciallineardependenceParametersSchema(
@@ -137,29 +147,39 @@ class MicroFrontend(MethodView):
                 values=data,
                 errors=errors,
                 result=result,
-                process=url_for(f"{CLASSICAL_ANALYSIS_SPECIALLINEARDEPENDENCE_BLP.name}.ProcessView"),
+                process=url_for(
+                    f"{CLASSICAL_ANALYSIS_SPECIALLINEARDEPENDENCE_BLP.name}.ProcessView"
+                ),
                 help_text="Provide two vectors and a tolerance to check their speciallineardependence.",
                 example_values=url_for(
-                    f"{CLASSICAL_ANALYSIS_SPECIALLINEARDEPENDENCE_BLP.name}.MicroFrontend", **self.example_inputs
+                    f"{CLASSICAL_ANALYSIS_SPECIALLINEARDEPENDENCE_BLP.name}.MicroFrontend",
+                    **self.example_inputs,
                 ),
             )
-    )
+        )
 
 
 @CLASSICAL_ANALYSIS_SPECIALLINEARDEPENDENCE_BLP.route("/process/")
 class ProcessView(MethodView):
     """Start a long running processing task."""
 
-    @CLASSICAL_ANALYSIS_SPECIALLINEARDEPENDENCE_BLP.arguments(ClassicalStateAnalysisSpeciallineardependenceParametersSchema(unknown=EXCLUDE), location="form")
+    @CLASSICAL_ANALYSIS_SPECIALLINEARDEPENDENCE_BLP.arguments(
+        ClassicalStateAnalysisSpeciallineardependenceParametersSchema(unknown=EXCLUDE),
+        location="form",
+    )
     @CLASSICAL_ANALYSIS_SPECIALLINEARDEPENDENCE_BLP.response(HTTPStatus.SEE_OTHER)
     @CLASSICAL_ANALYSIS_SPECIALLINEARDEPENDENCE_BLP.require_jwt("jwt", optional=True)
     def post(self, arguments):
         """Start the speciallineardependence analysis task."""
-        db_task = ProcessingTask(task_name=speciallineardependence_task.name, parameters=dumps(arguments))
+        db_task = ProcessingTask(
+            task_name=speciallineardependence_task.name, parameters=dumps(arguments)
+        )
         db_task.save(commit=True)
 
         # Start the task
-        task: chain = speciallineardependence_task.s(db_id=db_task.id) | save_task_result.s(db_id=db_task.id)
+        task: chain = speciallineardependence_task.s(
+            db_id=db_task.id
+        ) | save_task_result.s(db_id=db_task.id)
         task.link_error(save_task_error.s(db_id=db_task.id))
         task.apply_async()
 

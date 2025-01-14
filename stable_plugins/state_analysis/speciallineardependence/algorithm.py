@@ -1,6 +1,9 @@
 import numpy as np
 
-def analyze_schmidt_basis(state: np.ndarray, dim_A: int, dim_B: int, tolerance: float = 1e-10) -> bool:
+
+def analyze_schmidt_basis(
+    state: np.ndarray, dim_A: int, dim_B: int, tolerance: float = 1e-10
+) -> bool:
     """
     Führt die Schmidt-Zerlegung eines Zustands durch, filtert Basisvektoren basierend
     auf den Singularwerten und überprüft, ob diese linear unabhängig sind.
@@ -29,6 +32,8 @@ def analyze_schmidt_basis(state: np.ndarray, dim_A: int, dim_B: int, tolerance: 
 
     # Überprüfung der linearen Unabhängigkeit
     rank = np.linalg.matrix_rank(filtered_basis)
-    is_independent = rank == filtered_basis.shape[1]  # Rang sollte Anzahl der Vektoren entsprechen
+    is_independent = (
+        rank == filtered_basis.shape[1]
+    )  # Rang sollte Anzahl der Vektoren entsprechen
 
-    return  is_independent
+    return is_independent
