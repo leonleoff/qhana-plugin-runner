@@ -1,39 +1,68 @@
 import numpy as np
 
 
-def analyze_schmidt_basis(
-    state: np.ndarray, dim_A: int, dim_B: int, tolerance: float = 1e-10
+def analyze_lineardependenceinhx(
+    states: list[np.ndarray],
+    dim_A: int,
+    dim_B: int,
+    singular_value_tolerance: float = 1e-10,
+    linear_independence_tolerance: float = 1e-10,
 ) -> bool:
     """
-    Führt die Schmidt-Zerlegung eines Zustands durch, filtert Basisvektoren basierend
-    auf den Singularwerten und überprüft, ob diese linear unabhängig sind.
+    Performs Schmidt decomposition for a list of states, collects relevant basis vectors
+    based on singular values, and checks if these basis vectors are linearly independent.
 
     Args:
-        state (np.ndarray): Der Zustand als flacher Vektor.
-        dim_x (int): Dimension des H_X-Raums.
-        dim_r (int): Dimension des H_R-Raums.
-        tolerance (float): Schwellenwert, um kleine Singularwerte auszuschließen.
+        states (list[np.ndarray]): List of states as flat vectors.
+        dim_A (int): Dimension of the H_X space.
+        dim_B (int): Dimension of the H_R space.
+        svdTolerance (float): Threshold to exclude small singular values.
+        lindepTolerance (float): Tolerance for determining the matrix rank.
 
     Returns:
-        dict: Ein Dictionary mit den folgenden Schlüsseln:
-            - 'filtered_basis': Die gefilterten Basisvektoren im H_X-Raum.
-            - 'singular_values': Die Singularwerte der Zerlegung.
-            - 'is_independent': Ob die gefilterten Basisvektoren linear unabhängig sind.
+        bool: Whether the collected basis vectors are linearly independent.
     """
-    # Zustand in Matrixform umformen
-    state = state.reshape((dim_A, dim_B))
+    # Collect all relevant basis vectors
+    collected_basis = []
 
-    # SVD durchführen
-    u, s, vh = np.linalg.svd(state)
+    for state in states:
+        # Validate input dimensions
+        if state.size != dim_A * dim_B:
+            raise ValueError("The dimensions of a state do not match dim_A and dim_B.")
 
-    # Filtere die Basisvektoren basierend auf den Singularwerten
-    significant_indices = np.where(s > tolerance)[0]
-    filtered_basis = u[:, significant_indices]  # Nur relevante Basisvektoren behalten
+        # Reshape the state into matrix form
+        state_matrix = state.reshape((dim_A, dim_B))
 
-    # Überprüfung der linearen Unabhängigkeit
-    rank = np.linalg.matrix_rank(filtered_basis)
-    is_independent = (
-        rank == filtered_basis.shape[1]
-    )  # Rang sollte Anzahl der Vektoren entsprechen
+        # Perform Singular Value Decomposition (SVD)
+        u, s, vh = np.linalg.svd(state_matrix)
 
-    return is_independent
+        # Filter basis vectors based on singular values
+        significant_indices = np.where(s > svdTolerance)[0]
+        filtered_basis = u[:, significant_indices]
+
+        # Collect filtered basis vectors
+        collected_basis.append(filtered_basis)
+
+    # Combine all collected basis vectors into a single matrix
+    if collected_basis:
+        combined_basis = np.vstack(collected_basis)
+    else:
+        combined_basis = np.array([])
+
+    # Check linear independence of the combined basis vectors
+    if combined_basis.size > 0:
+        rank = np.linalg.matrix_rank(combined_basis, tol=lindepTolerance)
+        return rank < len(combined_basis)
+    else:
+        return False  # No vectors -> Trivial case, independent
+
+
+# Example usage
+if __name__ == "__main__":
+    # Example states
+    state1 = np.random.rand(6)  # Flat vector for dim_A=2, dim_B=3
+    state2 = np.random.rand(6)
+
+    result = analyze_lineardependenceinhx([state1, state2], dim_A=2, dim_B=3)
+
+    print("Are the vectors linearly independent?", result)

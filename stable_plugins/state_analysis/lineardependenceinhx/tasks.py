@@ -9,7 +9,7 @@ from qhana_plugin_runner.db.models.tasks import ProcessingTask
 from qhana_plugin_runner.storage import STORE
 
 from . import ClassicalStateAnalysisLineardependenceInHX
-from .algorithm import analyze_schmidt_basis
+from .algorithm import analyze_lineardependenceinhx
 
 TASK_LOGGER = get_task_logger(__name__)
 
@@ -62,8 +62,10 @@ def lineardependenceInHX_task(self, db_id: int) -> str:
             raise ValueError(error_msg)
 
         # Call the compute_schmidt_rank function
-        result = analyze_schmidt_basis(
-            state=state_array, dim_A=dim_A, dim_B=dim_B, tolerance=tolerance
+        result = analyze_lineardependenceinhx(
+            state=state_array,
+            dim_A=dim_A,
+            dim_B=dim_B,
         )
 
         output_message = (
