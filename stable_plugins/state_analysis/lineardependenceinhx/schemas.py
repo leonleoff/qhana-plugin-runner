@@ -1,10 +1,9 @@
 import marshmallow as ma
+from common.marshmallow_util import SETOFCOMPLEXVECTORS, TOLERANCE
 from qhana_plugin_runner.api.util import FrontendFormBaseSchema
 
 
-class ClassicalStateAnalysisSpeciallineardependenceParametersSchema(
-    FrontendFormBaseSchema
-):
+class ClassicalStateAnalysisLineardependenceInHXParametersSchema(FrontendFormBaseSchema):
     input_json = ma.fields.String(
         required=True,
         allow_none=False,

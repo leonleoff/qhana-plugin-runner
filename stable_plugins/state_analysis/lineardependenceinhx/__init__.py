@@ -18,11 +18,11 @@ from flask import Flask
 from qhana_plugin_runner.api.util import SecurityBlueprint
 from qhana_plugin_runner.util.plugins import QHAnaPluginBase, plugin_identifier
 
-_plugin_name = "speciallineardependence_classical"
+_plugin_name = "lineardependenceInHX_classical"
 __version__ = "v0.0.1"
 _identifier = plugin_identifier(_plugin_name, __version__)
 
-CLASSICAL_ANALYSIS_SPECIALLINEARDEPENDENCE_BLP = SecurityBlueprint(
+CLASSICAL_ANALYSIS_LINEARDEPENDENCEINHX_BLP = SecurityBlueprint(
     _identifier,  # blueprint name
     __name__,  # module import name!
     description="Classical state analysis plugin API.",
@@ -30,17 +30,17 @@ CLASSICAL_ANALYSIS_SPECIALLINEARDEPENDENCE_BLP = SecurityBlueprint(
 )
 
 
-class ClassicalStateAnalysisSpeciallineardependence(QHAnaPluginBase):
+class ClassicalStateAnalysisLineardependenceInHX(QHAnaPluginBase):
     name = _plugin_name
     version = __version__
     description = "Analyzes whether a state is speciallinear dependend or not."
-    tags = ["classical-state-analysis", "speciallineardependence"]
+    tags = ["classical-state-analysis", "lineardependenceInHX"]
 
     def __init__(self, app: Optional[Flask]) -> None:
         super().__init__(app)
 
     def get_api_blueprint(self):
-        return CLASSICAL_ANALYSIS_SPECIALLINEARDEPENDENCE_BLP
+        return CLASSICAL_ANALYSIS_LINEARDEPENDENCEINHX_BLP
 
 
 try:

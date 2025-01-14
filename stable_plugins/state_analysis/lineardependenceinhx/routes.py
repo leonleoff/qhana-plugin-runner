@@ -26,24 +26,24 @@ from qhana_plugin_runner.tasks import (
 )
 
 from . import (
-    CLASSICAL_ANALYSIS_SPECIALLINEARDEPENDENCE_BLP,
-    ClassicalStateAnalysisSpeciallineardependence,
+    CLASSICAL_ANALYSIS_LINEARDEPENDENCEINHX_BLP,
+    ClassicalStateAnalysisLineardependenceInHX,
 )
-from .schemas import ClassicalStateAnalysisSpeciallineardependenceParametersSchema
-from .tasks import speciallineardependence_task
+from .schemas import ClassicalStateAnalysisLineardependenceInHXParametersSchema
+from .tasks import lineardependenceInHX_task
 
 
-@CLASSICAL_ANALYSIS_SPECIALLINEARDEPENDENCE_BLP.route("/")
+@CLASSICAL_ANALYSIS_LINEARDEPENDENCEINHX_BLP.route("/")
 class PluginsView(MethodView):
     """Plugins collection resource."""
 
-    @CLASSICAL_ANALYSIS_SPECIALLINEARDEPENDENCE_BLP.response(
+    @CLASSICAL_ANALYSIS_LINEARDEPENDENCEINHX_BLP.response(
         HTTPStatus.OK, PluginMetadataSchema()
     )
-    @CLASSICAL_ANALYSIS_SPECIALLINEARDEPENDENCE_BLP.require_jwt("jwt", optional=True)
+    @CLASSICAL_ANALYSIS_LINEARDEPENDENCEINHX_BLP.require_jwt("jwt", optional=True)
     def get(self):
         """Endpoint returning the plugin metadata."""
-        plugin = ClassicalStateAnalysisSpeciallineardependence.instance
+        plugin = ClassicalStateAnalysisLineardependenceInHX.instance
         if plugin is None:
             abort(HTTPStatus.INTERNAL_SERVER_ERROR)
         return PluginMetadata(
@@ -54,10 +54,10 @@ class PluginsView(MethodView):
             type=PluginType.processing,
             entry_point=EntryPoint(
                 href=url_for(
-                    f"{CLASSICAL_ANALYSIS_SPECIALLINEARDEPENDENCE_BLP.name}.ProcessView"
+                    f"{CLASSICAL_ANALYSIS_LINEARDEPENDENCEINHX_BLP.name}.ProcessView"
                 ),
                 ui_href=url_for(
-                    f"{CLASSICAL_ANALYSIS_SPECIALLINEARDEPENDENCE_BLP.name}.MicroFrontend"
+                    f"{CLASSICAL_ANALYSIS_LINEARDEPENDENCEINHX_BLP.name}.MicroFrontend"
                 ),
                 plugin_dependencies=[],
                 data_input=[
@@ -69,19 +69,19 @@ class PluginsView(MethodView):
                 ],
                 data_output=[
                     DataMetadata(
-                        data_type="custom/speciallineardependence-output",
+                        data_type="custom/lineardependenceInHX-output",
                         content_type=["text/plain"],
                         required=True,
                     )
                 ],
             ),
-            tags=ClassicalStateAnalysisSpeciallineardependence.instance.tags,
+            tags=ClassicalStateAnalysisLineardependenceInHX.instance.tags,
         )
 
 
-@CLASSICAL_ANALYSIS_SPECIALLINEARDEPENDENCE_BLP.route("/ui/")
+@CLASSICAL_ANALYSIS_LINEARDEPENDENCEINHX_BLP.route("/ui/")
 class MicroFrontend(MethodView):
-    """Micro frontend for the classical speciallineardependence state analysis plugin."""
+    """Micro frontend for the classical lineardependenceInHX state analysis plugin."""
 
     example_inputs = {
         "inputJson": (
@@ -94,43 +94,43 @@ class MicroFrontend(MethodView):
         )
     }
 
-    @CLASSICAL_ANALYSIS_SPECIALLINEARDEPENDENCE_BLP.html_response(
+    @CLASSICAL_ANALYSIS_LINEARDEPENDENCEINHX_BLP.html_response(
         HTTPStatus.OK,
-        description="Micro frontend of the classical speciallineardependence state analysis plugin.",
+        description="Micro frontend of the classical lineardependenceInHX state analysis plugin.",
     )
-    @CLASSICAL_ANALYSIS_SPECIALLINEARDEPENDENCE_BLP.arguments(
-        ClassicalStateAnalysisSpeciallineardependenceParametersSchema(
+    @CLASSICAL_ANALYSIS_LINEARDEPENDENCEINHX_BLP.arguments(
+        ClassicalStateAnalysisLineardependenceInHXParametersSchema(
             partial=True, unknown=EXCLUDE, validate_errors_as_result=True
         ),
         location="query",
         required=False,
     )
-    @CLASSICAL_ANALYSIS_SPECIALLINEARDEPENDENCE_BLP.require_jwt("jwt", optional=True)
+    @CLASSICAL_ANALYSIS_LINEARDEPENDENCEINHX_BLP.require_jwt("jwt", optional=True)
     def get(self, errors):
         """Return the micro frontend."""
         return self.render(request.args, errors, False)
 
-    @CLASSICAL_ANALYSIS_SPECIALLINEARDEPENDENCE_BLP.html_response(
+    @CLASSICAL_ANALYSIS_LINEARDEPENDENCEINHX_BLP.html_response(
         HTTPStatus.OK,
-        description="Micro frontend of the classical speciallineardependence state analysis plugin.",
+        description="Micro frontend of the classical lineardependenceInHX state analysis plugin.",
     )
-    @CLASSICAL_ANALYSIS_SPECIALLINEARDEPENDENCE_BLP.arguments(
-        ClassicalStateAnalysisSpeciallineardependenceParametersSchema(
+    @CLASSICAL_ANALYSIS_LINEARDEPENDENCEINHX_BLP.arguments(
+        ClassicalStateAnalysisLineardependenceInHXParametersSchema(
             partial=True, unknown=EXCLUDE, validate_errors_as_result=True
         ),
         location="form",
         required=False,
     )
-    @CLASSICAL_ANALYSIS_SPECIALLINEARDEPENDENCE_BLP.require_jwt("jwt", optional=True)
+    @CLASSICAL_ANALYSIS_LINEARDEPENDENCEINHX_BLP.require_jwt("jwt", optional=True)
     def post(self, errors):
         """Return the micro frontend with prerendered inputs."""
         return self.render(request.form, errors, not errors)
 
     def render(self, data: Mapping, errors: dict, valid: bool):
-        plugin = ClassicalStateAnalysisSpeciallineardependence.instance
+        plugin = ClassicalStateAnalysisLineardependenceInHX.instance
         if plugin is None:
             abort(HTTPStatus.INTERNAL_SERVER_ERROR)
-        schema = ClassicalStateAnalysisSpeciallineardependenceParametersSchema()
+        schema = ClassicalStateAnalysisLineardependenceInHXParametersSchema()
         result = None
         task_id = data.get("task_id")
         if task_id:
@@ -148,38 +148,38 @@ class MicroFrontend(MethodView):
                 errors=errors,
                 result=result,
                 process=url_for(
-                    f"{CLASSICAL_ANALYSIS_SPECIALLINEARDEPENDENCE_BLP.name}.ProcessView"
+                    f"{CLASSICAL_ANALYSIS_LINEARDEPENDENCEINHX_BLP.name}.ProcessView"
                 ),
-                help_text="Provide two vectors and a tolerance to check their speciallineardependence.",
+                help_text="Provide two vectors and a tolerance to check their lineardependenceInHX.",
                 example_values=url_for(
-                    f"{CLASSICAL_ANALYSIS_SPECIALLINEARDEPENDENCE_BLP.name}.MicroFrontend",
+                    f"{CLASSICAL_ANALYSIS_LINEARDEPENDENCEINHX_BLP.name}.MicroFrontend",
                     **self.example_inputs,
                 ),
             )
         )
 
 
-@CLASSICAL_ANALYSIS_SPECIALLINEARDEPENDENCE_BLP.route("/process/")
+@CLASSICAL_ANALYSIS_LINEARDEPENDENCEINHX_BLP.route("/process/")
 class ProcessView(MethodView):
     """Start a long running processing task."""
 
-    @CLASSICAL_ANALYSIS_SPECIALLINEARDEPENDENCE_BLP.arguments(
-        ClassicalStateAnalysisSpeciallineardependenceParametersSchema(unknown=EXCLUDE),
+    @CLASSICAL_ANALYSIS_LINEARDEPENDENCEINHX_BLP.arguments(
+        ClassicalStateAnalysisLineardependenceInHXParametersSchema(unknown=EXCLUDE),
         location="form",
     )
-    @CLASSICAL_ANALYSIS_SPECIALLINEARDEPENDENCE_BLP.response(HTTPStatus.SEE_OTHER)
-    @CLASSICAL_ANALYSIS_SPECIALLINEARDEPENDENCE_BLP.require_jwt("jwt", optional=True)
+    @CLASSICAL_ANALYSIS_LINEARDEPENDENCEINHX_BLP.response(HTTPStatus.SEE_OTHER)
+    @CLASSICAL_ANALYSIS_LINEARDEPENDENCEINHX_BLP.require_jwt("jwt", optional=True)
     def post(self, arguments):
-        """Start the speciallineardependence analysis task."""
+        """Start the lineardependenceInHX analysis task."""
         db_task = ProcessingTask(
-            task_name=speciallineardependence_task.name, parameters=dumps(arguments)
+            task_name=lineardependenceInHX_task.name, parameters=dumps(arguments)
         )
         db_task.save(commit=True)
 
         # Start the task
-        task: chain = speciallineardependence_task.s(
+        task: chain = lineardependenceInHX_task.s(db_id=db_task.id) | save_task_result.s(
             db_id=db_task.id
-        ) | save_task_result.s(db_id=db_task.id)
+        )
         task.link_error(save_task_error.s(db_id=db_task.id))
         task.apply_async()
 

@@ -8,18 +8,18 @@ from qhana_plugin_runner.celery import CELERY
 from qhana_plugin_runner.db.models.tasks import ProcessingTask
 from qhana_plugin_runner.storage import STORE
 
-from . import ClassicalStateAnalysisSpeciallineardependence
+from . import ClassicalStateAnalysisLineardependenceInHX
 from .algorithm import analyze_schmidt_basis
 
 TASK_LOGGER = get_task_logger(__name__)
 
 
 @CELERY.task(
-    name=f"{ClassicalStateAnalysisSpeciallineardependence.instance.identifier}.schmidtrank_task",
+    name=f"{ClassicalStateAnalysisLineardependenceInHX.instance.identifier}.schmidtrank_task",
     bind=True,
 )
-def speciallineardependence_task(self, db_id: int) -> str:
-    TASK_LOGGER.info(f"Starting speciallineardependence task with db id '{db_id}'")
+def lineardependenceInHX_task(self, db_id: int) -> str:
+    TASK_LOGGER.info(f"Starting lineardependenceInHX task with db id '{db_id}'")
     task_data = ProcessingTask.get_by_id(id_=db_id)
 
     parameters = loads(task_data.parameters or "{}")
