@@ -21,7 +21,7 @@ class ClassicalStateAnalysisLineardependenceInHXParametersSchema(FrontendFormBas
         metadata={
             "label": "Dim A",
             "description": ("A number specifying the dimension of A. " "Example: 2"),
-            "input_type": "text",
+            "input_type": "number",
         },
     )
 
@@ -30,7 +30,7 @@ class ClassicalStateAnalysisLineardependenceInHXParametersSchema(FrontendFormBas
         metadata={
             "label": "Dim B",
             "description": ("A number specifying the dimension of B. " "Example: 2"),
-            "input_type": "text",
+            "input_type": "number",
         },
     )
 

@@ -4,14 +4,15 @@ from typing import Optional
 
 import numpy as np
 from celery.utils.log import get_task_logger
+from common.algorithms import analyze_lineardependenceinhx
 from qhana_plugin_runner.celery import CELERY
 from qhana_plugin_runner.db.models.tasks import ProcessingTask
 from qhana_plugin_runner.storage import STORE
 
 from . import ClassicalStateAnalysisLineardependenceInHX
-from .algorithm import analyze_lineardependenceinhx
 
 TASK_LOGGER = get_task_logger(__name__)
+# TODO fix code
 
 
 @CELERY.task(
@@ -23,6 +24,7 @@ def lineardependenceInHX_task(self, db_id: int) -> str:
     task_data = ProcessingTask.get_by_id(id_=db_id)
 
     parameters = loads(task_data.parameters or "{}")
+    TASK_LOGGER.info(f"Parameters are '{task_data.parameters}'")
     state = parameters.get("state", [])
     dim_A = parameters.get("dim_A", 0)
     dim_B = parameters.get("dim_B", 0)

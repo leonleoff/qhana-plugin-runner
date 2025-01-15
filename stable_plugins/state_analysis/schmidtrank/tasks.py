@@ -4,12 +4,12 @@ from typing import Optional
 
 import numpy as np
 from celery.utils.log import get_task_logger
+from common.algorithms import compute_schmidt_rank
 from qhana_plugin_runner.celery import CELERY
 from qhana_plugin_runner.db.models.tasks import ProcessingTask
 from qhana_plugin_runner.storage import STORE
 
 from . import ClassicalStateAnalysisSchmidtrank
-from .algorithm import compute_schmidt_rank
 
 TASK_LOGGER = get_task_logger(__name__)
 
