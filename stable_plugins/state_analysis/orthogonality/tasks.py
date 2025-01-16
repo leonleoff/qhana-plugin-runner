@@ -19,7 +19,7 @@ TASK_LOGGER = get_task_logger(__name__)
     bind=True,
 )
 def orthogonality_task(self, db_id: int) -> str:
-    TASK_LOGGER.info(f"Starting orthogonality task with db id '{db_id}'")
+    TASK_LOGGER.info(f"Starting 'orthogonality' task with database ID '{db_id}'.")
 
     # Load task data
     task_data = ProcessingTask.get_by_id(id_=db_id)
@@ -57,18 +57,18 @@ def orthogonality_task(self, db_id: int) -> str:
         raise
 
     try:
-        # Log and call the function to check linear dependence
-        vec1 = vectors[0]
-        vec2 = vectors[1]
+        # Log and call the function to check orthogonality
+        vec1 = new_set_of_vectors[0]
+        vec2 = new_set_of_vectors[1]
 
         TASK_LOGGER.info(
-            "Invoking 'are_vectors_linearly_dependent' with parameters: "
+            "Invoking 'are_vectors_orthogonal' with parameters: "
             f"vec1={vec1}, vec2={vec2}, tolerance={tolerance}"
         )
 
         result = are_vectors_orthogonal(vec1, vec2, tolerance)
 
-        TASK_LOGGER.info(f"Result of otzhgonaoliy analysis: {result}")
+        TASK_LOGGER.info(f"Result of orthogonality analysis: {result}")
 
         # Save the result as a file
         with SpooledTemporaryFile(mode="w") as output_file:
@@ -78,7 +78,7 @@ def orthogonality_task(self, db_id: int) -> str:
                 db_id,
                 output_file,
                 "out.txt",  # File name
-                "custom/otzhgonaoliy-output",  # Data type
+                "custom/orthogonality-output",  # Data type
                 "text/plain",  # MIME type
             )
         TASK_LOGGER.info(f"Result successfully saved for task ID {db_id}.")
@@ -86,5 +86,5 @@ def orthogonality_task(self, db_id: int) -> str:
         return f"{result}"
 
     except Exception as e:
-        TASK_LOGGER.error(f"Error during 'otzhgonaoliy' task execution: {e}")
+        TASK_LOGGER.error(f"Error during 'orthogonality' task execution: {e}")
         raise
