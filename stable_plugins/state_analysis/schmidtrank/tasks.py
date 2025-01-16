@@ -19,62 +19,73 @@ TASK_LOGGER = get_task_logger(__name__)
     bind=True,
 )
 def schmidtrank_task(self, db_id: int) -> str:
-    TASK_LOGGER.info(f"Starting schmidtrank task with db id '{db_id}'")
+
+    TASK_LOGGER.info(f"Starting 'schmidtrank' task with database ID '{db_id}'.")
+
+    # Load task data
     task_data = ProcessingTask.get_by_id(id_=db_id)
     if not task_data:
-        msg = f"Could not load task data with id {db_id}!"
+        msg = f"Task data with ID {db_id} could not be loaded!"
         TASK_LOGGER.error(msg)
         raise KeyError(msg)
 
+    # Extract parameters and log them
     parameters = loads(task_data.parameters or "{}")
-    state = parameters.get("vector", [])
-    dim_A = parameters.get("dimA", 0)
-    dim_B = parameters.get("dimB", 0)
-    tolerance = parameters.get("tolerance", 1e-10)
+    TASK_LOGGER.info(f"Extracted parameters: {parameters}")
+
+    vector = parameters.get("vector", [])
+    dim_A = parameters.get("dim_A")
+    dim_B = parameters.get("dim_B")
+    tolerance = parameters.get("tolerance")
 
     TASK_LOGGER.info(
-        f"Parameters: state={state}, dim_A={dim_A}, dim_B={dim_B}, tolerance={tolerance}"
+        f"Input parameters before transformation: vector={vector}, dim_A={dim_A}, dim_B={dim_B}, tolerance={tolerance}"
     )
 
+    # Transform input vectors into NumPy arrays of complex numbers
+    np_vector = []
     try:
-        # Convert state to numpy array
-        try:
-            state_array = np.array([complex(real, imag) for real, imag in state])
-        except ValueError as e:
-            msg = f"Failed to cast 'state' elements to complex numbers: {e}"
-            TASK_LOGGER.error(msg)
-            raise ValueError(msg)
 
-        # Validate dimensions
-        if len(state_array) != dim_A * dim_B:
-            msg = f"Dimension mismatch: len(state)={len(state_array)} does not match dim_A * dim_B = {dim_A * dim_B}."
-            TASK_LOGGER.error(msg)
-            raise ValueError(msg)
+        complex_numbers = []
+        for pair in vector:
+            complex_number = complex(pair[0], pair[1])
+            complex_numbers.append(complex_number)
+        np_vector = np.array(complex_numbers)
 
-        # Log the call to the compute_schmidt_rank function
+        TASK_LOGGER.info(f"Transformed vector: {np_vector}")
+
+    except Exception as e:
+        TASK_LOGGER.error(f"Error while transforming input vectors: {e}")
+        raise
+
+    try:
+        # Log and call the function to analyze linear dependence in HX
         TASK_LOGGER.info(
-            "Calling the compute_schmidt_rank function with parameters: "
-            f"state={state_array}, dim_A={dim_A}, dim_B={dim_B}, tolerance={tolerance}"
+            "Invoking 'schmidtrank' with parameters: "
+            f"vector={np_vector}, dim_A={dim_A}, dim_B={dim_B}, tolerance={tolerance}"
         )
-        # Call the function
+
         result = compute_schmidt_rank(
-            state=state_array, dim_A=dim_A, dim_B=dim_B, tolerance=tolerance
+            state=np_vector, dim_A=dim_A, dim_B=dim_B, tolerance=tolerance
         )
+
+        TASK_LOGGER.info(f"Result of schmidtrank analysis: {result}")
 
         # Save the result as a file
-        with SpooledTemporaryFile(mode="w") as output:
-            output.write(f"{result}")
-            output.seek(0)  # Reset file pointer
+        with SpooledTemporaryFile(mode="w") as output_file:
+            output_file.write(f"{result}")
+            output_file.seek(0)  # Reset the file pointer for reading
             STORE.persist_task_result(
                 db_id,
-                output,
-                "out.txt",  # Filename
+                output_file,
+                "out.txt",  # File name
                 "custom/schmidtrank-output",  # Data type
-                "text/plain",  # Content-Type
+                "text/plain",  # MIME type
             )
+        TASK_LOGGER.info(f"Result successfully saved for task ID {db_id}.")
 
         return f"{result}"
 
     except Exception as e:
-        TASK_LOGGER.error(f"Error in schmidtrank task: {e}")
+        TASK_LOGGER.error(f"Error during 'schmidtrank' task execution: {e}")
         raise
