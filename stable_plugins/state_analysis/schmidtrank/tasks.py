@@ -34,18 +34,17 @@ def schmidtrank_task(self, db_id: int) -> str:
     TASK_LOGGER.info(f"Extracted parameters: {parameters}")
 
     vector = parameters.get("vector", [])
-    dim_A = parameters.get("dim_A")
-    dim_B = parameters.get("dim_B")
+    dim_A = parameters.get("dimA")
+    dim_B = parameters.get("dimB")
     tolerance = parameters.get("tolerance")
 
     TASK_LOGGER.info(
         f"Input parameters before transformation: vector={vector}, dim_A={dim_A}, dim_B={dim_B}, tolerance={tolerance}"
     )
 
-    # Transform input vectors into NumPy arrays of complex numbers
+    # Transform the input vector into a NumPy array of complex numbers
     np_vector = []
     try:
-
         complex_numbers = []
         for pair in vector:
             complex_number = complex(pair[0], pair[1])
@@ -55,13 +54,13 @@ def schmidtrank_task(self, db_id: int) -> str:
         TASK_LOGGER.info(f"Transformed vector: {np_vector}")
 
     except Exception as e:
-        TASK_LOGGER.error(f"Error while transforming input vectors: {e}")
+        TASK_LOGGER.error(f"Error while transforming input vector: {e}")
         raise
 
     try:
-        # Log and call the function to analyze linear dependence in HX
+        # Log and call the function to compute Schmidt rank
         TASK_LOGGER.info(
-            "Invoking 'schmidtrank' with parameters: "
+            "Invoking 'compute_schmidt_rank' with parameters: "
             f"vector={np_vector}, dim_A={dim_A}, dim_B={dim_B}, tolerance={tolerance}"
         )
 
@@ -69,7 +68,7 @@ def schmidtrank_task(self, db_id: int) -> str:
             state=np_vector, dim_A=dim_A, dim_B=dim_B, tolerance=tolerance
         )
 
-        TASK_LOGGER.info(f"Result of schmidtrank analysis: {result}")
+        TASK_LOGGER.info(f"Result of Schmidt rank analysis: {result}")
 
         # Save the result as a file
         with SpooledTemporaryFile(mode="w") as output_file:

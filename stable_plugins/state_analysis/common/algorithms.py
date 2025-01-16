@@ -2,9 +2,11 @@ from typing import List
 
 import numpy as np
 
+DEFAULT_TOLERANCE = 1e-10
+
 
 def are_vectors_linearly_dependent(
-    vectors: List[np.ndarray], tolerance: float = 1e-10
+    vectors: List[np.ndarray], tolerance: float = DEFAULT_TOLERANCE
 ) -> bool:
     """
     Checks if a list of vectors is linearly dependent.
@@ -20,6 +22,11 @@ def are_vectors_linearly_dependent(
         ValueError: If the list of vectors is empty or if the vectors have different shapes.
         TypeError: If any element in the list is not a NumPy array.
     """
+
+    # Set default for tolerance
+    if tolerance is None:
+        tolerance = DEFAULT_TOLERANCE
+
     # Validate input
     if not vectors:
         raise ValueError("The input list of vectors is empty.")
@@ -28,7 +35,7 @@ def are_vectors_linearly_dependent(
         raise TypeError("All elements in the input list must be NumPy arrays.")
 
     if not all(vec.shape == vectors[0].shape for vec in vectors):
-        raise ValueError("All vectors must have the same shape.")
+        raise ValueError(f"All vectors must have the same shape. All vectors={vectors}")
 
     try:
         # Convert the list of vectors into a matrix where each vector is a row
@@ -47,8 +54,8 @@ def analyze_lineardependenceinhx(
     states: List[np.ndarray],
     dim_A: int,
     dim_B: int,
-    singular_value_tolerance: float = 1e-10,
-    linear_independence_tolerance: float = 1e-10,
+    singular_value_tolerance: float = DEFAULT_TOLERANCE,
+    linear_independence_tolerance: float = DEFAULT_TOLERANCE,
 ) -> bool:
     """
     Performs Schmidt decomposition for a list of states, collects relevant basis vectors
@@ -68,6 +75,12 @@ def analyze_lineardependenceinhx(
         ValueError: If any state has dimensions that do not match `dim_A * dim_B`.
         TypeError: If `states` is not a list of NumPy arrays.
     """
+    # Set default for tolerance
+    if singular_value_tolerance is None:
+        singular_value_tolerance = DEFAULT_TOLERANCE
+    if linear_independence_tolerance is None:
+        linear_independence_tolerance = DEFAULT_TOLERANCE
+
     # Input validation
     if not isinstance(states, list):
         raise TypeError("`states` must be a list of NumPy arrays.")
@@ -88,11 +101,16 @@ def analyze_lineardependenceinhx(
             u, s, vh = np.linalg.svd(state_matrix)
 
             # Filter basis vectors based on singular values
-            significant_indices = np.where(s > singular_value_tolerance)[0]
-            filtered_basis = u[:, significant_indices]
+            filtered_basis = []
+            for index, singular_value in enumerate(s):
+                if singular_value > singular_value_tolerance:
+                    basis = u[index]
+                    print("gefundene basis", basis)
+                    filtered_basis.append(basis)
 
             # Collect filtered basis vectors
-            collected_basis.append(filtered_basis)
+            for base in filtered_basis:
+                collected_basis.append(base)
         except np.linalg.LinAlgError as e:
             raise RuntimeError(
                 f"An error occurred during SVD of a state: {state}: {e}"
@@ -109,7 +127,7 @@ def analyze_lineardependenceinhx(
 
 
 def are_vectors_orthogonal(
-    vec1: np.ndarray, vec2: np.ndarray, tolerance: float = 1e-10
+    vec1: np.ndarray, vec2: np.ndarray, tolerance: float = DEFAULT_TOLERANCE
 ) -> bool:
     """
     Checks whether two NumPy vectors are orthogonal, considering complex conjugates for complex vectors.
@@ -126,6 +144,10 @@ def are_vectors_orthogonal(
         ValueError: If the vectors do not have the same dimension.
         TypeError: If the inputs are not NumPy arrays or cannot be interpreted as such.
     """
+    # Set default for tolerance
+    if tolerance is None:
+        tolerance = DEFAULT_TOLERANCE
+
     # Input validation
     if not isinstance(vec1, np.ndarray) or not isinstance(vec2, np.ndarray):
         raise TypeError("Both inputs must be NumPy arrays.")
@@ -151,7 +173,7 @@ def are_vectors_orthogonal(
 
 
 def compute_schmidt_rank(
-    state: np.ndarray, dim_A: int, dim_B: int, tolerance: float = 1e-10
+    state: np.ndarray, dim_A: int, dim_B: int, tolerance: float = DEFAULT_TOLERANCE
 ) -> int:
     """
     Computes the Schmidt rank of a bipartite quantum state using singular value decomposition (SVD).
@@ -169,6 +191,10 @@ def compute_schmidt_rank(
         ValueError: If the dimensions `dim_A * dim_B` do not match the size of `state`.
         TypeError: If the input `state` is not a NumPy array or if dimensions are invalid.
     """
+    # Set default for tolerance
+    if tolerance is None:
+        tolerance = DEFAULT_TOLERANCE
+
     # Input validation
     if not isinstance(state, np.ndarray):
         raise TypeError("The input `state` must be a NumPy array.")

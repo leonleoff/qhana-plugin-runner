@@ -34,8 +34,8 @@ def lineardependenceInHX_task(self, db_id: int) -> str:
     TASK_LOGGER.info(f"Extracted parameters: {parameters}")
 
     vectors = parameters.get("vectors", [])
-    dim_A = parameters.get("dim_A")
-    dim_B = parameters.get("dim_B")
+    dim_A = parameters.get("dimA")
+    dim_B = parameters.get("dimB")
     singular_value_tolerance = parameters.get("singular_value_tolerance")
     linear_independence_tolerance = parameters.get("linear_independence_tolerance")
 
@@ -68,7 +68,7 @@ def lineardependenceInHX_task(self, db_id: int) -> str:
         )
 
         result = analyze_lineardependenceinhx(
-            vectors=new_set_of_vectors,
+            states=new_set_of_vectors,
             dim_A=dim_A,
             dim_B=dim_B,
             singular_value_tolerance=singular_value_tolerance,
