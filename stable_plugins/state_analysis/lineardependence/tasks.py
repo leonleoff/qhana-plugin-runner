@@ -36,6 +36,11 @@ def lineardependence_task(self, db_id: int) -> str:
         # Convert vectors to numpy arrays
         numpy_vectors = [np.array(vector, dtype=complex) for vector in vectors]
 
+        # Log the call to the function for checking linear dependence
+        TASK_LOGGER.info(
+            "Calling the function to check linear dependence with parameters: "
+            f"vectors={numpy_vectors}, tolerance={tolerance}"
+        )
         # Call the function to check linear dependence
         result = are_vectors_linearly_dependent(
             vectors=numpy_vectors, tolerance=tolerance

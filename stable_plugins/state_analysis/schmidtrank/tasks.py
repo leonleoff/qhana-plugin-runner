@@ -51,7 +51,12 @@ def schmidtrank_task(self, db_id: int) -> str:
             TASK_LOGGER.error(msg)
             raise ValueError(msg)
 
-        # Call the compute_schmidt_rank function
+        # Log the call to the compute_schmidt_rank function
+        TASK_LOGGER.info(
+            "Calling the compute_schmidt_rank function with parameters: "
+            f"state={state_array}, dim_A={dim_A}, dim_B={dim_B}, tolerance={tolerance}"
+        )
+        # Call the function
         result = compute_schmidt_rank(
             state=state_array, dim_A=dim_A, dim_B=dim_B, tolerance=tolerance
         )

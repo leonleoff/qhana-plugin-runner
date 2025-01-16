@@ -64,7 +64,14 @@ def lineardependenceInHX_task(self, db_id: int) -> str:
             TASK_LOGGER.error(error_msg)
             raise ValueError(error_msg)
 
-        # Call the analyze_lineardependenceinhx function
+        # Log the call to the analyze_linear_dependence_in_hx function
+        TASK_LOGGER.info(
+            "Calling the analyze_linear_dependence_in_hx function with parameters: "
+            f"states={[state_array]}, dim_A={dim_A}, dim_B={dim_B}, "
+            f"singular_value_tolerance={singular_value_tolerance}, "
+            f"linear_independence_tolerance={linear_independence_tolerance}"
+        )
+        # Call the function
         result = analyze_lineardependenceinhx(
             states=[state_array],
             dim_A=dim_A,

@@ -44,6 +44,12 @@ def orthogonality_task(self, db_id: int) -> str:
         vec1 = np.array(vector1, dtype=complex)
         vec2 = np.array(vector2, dtype=complex)
 
+        # Log the call to the are_vectors_orthogonal function
+        TASK_LOGGER.info(
+            "Calling the are_vectors_orthogonal function with parameters: "
+            f"vec1={vec1}, vec2={vec2}, tolerance={tolerance}"
+        )
+        # Call the function
         result = are_vectors_orthogonal(vec1, vec2, tolerance)
 
         # Speichere das Ergebnis als Datei
