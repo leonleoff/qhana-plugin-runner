@@ -4,23 +4,17 @@ import marshmallow as ma
 
 
 class TOLERANCE(ma.fields.Float):
-    """A Float field with a default value when an empty string is provided."""
+    """
+    A custom Float field for handling tolerance values.
 
-    def __init__(
-        self,
-        *,
-        default_tolerance: float,
-        allow_nan: bool = False,
-        as_string: bool = False,
-        **kwargs,
-    ):
-        self.default_tolerance = default_tolerance
-        super().__init__(as_string=as_string, **kwargs, missing=default_tolerance)
+    When using TOLERANCE, it is important to set the tolerance to `None`
+    if the input is an empty string (`""`) in the `@ma.post_load` method.
+    """
 
     def _deserialize(self, value, attr, data, **kwargs):
-        # Replace empty string or None with the default tolerance value
-        if value == "" or value is None:
-            value = self.default_tolerance
+        if value in (None, ""):
+            return ""
+
         return super()._validated(value)
 
 

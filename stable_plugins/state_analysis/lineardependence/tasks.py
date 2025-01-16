@@ -25,8 +25,10 @@ def lineardependence_task(self, db_id: int) -> str:
         msg = f"Could not load task data with id {db_id}!"
         TASK_LOGGER.error(msg)
         raise KeyError(msg)
-
+    # Get and Log parameters
     parameters = loads(task_data.parameters or "{}")
+    TASK_LOGGER.info(f"Parameters: {parameters}")
+
     vectors = parameters.get("vectors", [])
     tolerance = parameters.get("tolerance", 1e-10)
 

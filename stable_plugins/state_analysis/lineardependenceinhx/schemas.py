@@ -57,48 +57,13 @@ class ClassicalStateAnalysisLineardependenceInHXParametersSchema(FrontendFormBas
         },
     )
 
+    @ma.post_load
+    def validate_data(self, data, **kwargs):
+        # transform 'tolerance'
+        if data["singularValueTolerance"] == "":
+            data["singularValueTolerance"] = None
 
-@ma.post_load
-def validate_data(self, data, **kwargs):
-    try:
-        # Check if the input is a dictionary and contains the required keys
-        if not isinstance(data, dict):
-            raise ma.ValidationError("The input data must be a dictionary.")
+        if data["linearDependenceTolerance"] == "":
+            data["linearDependenceTolerance"] = None
 
-        # Check if 'vectors' is present in the dictionary
-        if "vectors" not in data:
-            raise ma.ValidationError("The input data must contain a 'vectors' key.")
-
-        # Extract the vector
-        vectors = data["vectors"]
-
-        # Convert each list of vectors into complex numbers
-        processed_data = [
-            [complex(real, imag) for real, imag in vector] for vector in vectors
-        ]
-
-        # Validate dimensions
-        dimA = data.get("dimA")
-        dimB = data.get("dimB")
-        for vector in processed_data:
-            if len(vector) != dimA * dimB:
-                raise ma.ValidationError(
-                    f"The length of the vector must match the product of dimA and dimB. For vector: {vector}"
-                )
-
-        # Extract tolerances
-        singularValueTolerance = data.get("singularValueTolerance", 1e-10)
-        linearDependenceTolerance = data.get("linearDependenceTolerance", 1e-10)
-
-        return {
-            "processed_vectors": processed_data,
-            "dimA": dimA,
-            "dimB": dimB,
-            "singular_value_tolerance": singularValueTolerance,
-            "linear_independence_tolerance": linearDependenceTolerance,
-        }
-
-    except ValueError as e:
-        raise ma.ValidationError(f"Invalid vector format in the data: {data}. Error: {e}")
-    except Exception as e:
-        raise ma.ValidationError(f"An unexpected error occurred: {e}")
+        return data
