@@ -20,66 +20,70 @@ TASK_LOGGER = get_task_logger(__name__)
 )
 def lineardependence_task(self, db_id: int) -> str:
 
-    TASK_LOGGER.info(f"Starting lineardependence task with db id '{db_id}'")
+    TASK_LOGGER.info(f"Starting 'lineardependence' task with database ID '{db_id}'.")
+
+    # Load task data
     task_data = ProcessingTask.get_by_id(id_=db_id)
     if not task_data:
-        msg = f"Could not load task data with id {db_id}!"
+        msg = f"Task data with ID {db_id} could not be loaded!"
         TASK_LOGGER.error(msg)
         raise KeyError(msg)
 
-    # Get and Log parameters
+    # Extract parameters and log them
     parameters = loads(task_data.parameters or "{}")
-    TASK_LOGGER.info(f"Parameters: {parameters}")
+    TASK_LOGGER.info(f"Extracted parameters: {parameters}")
 
-    # Get and log values
     vectors = parameters.get("vectors", [])
     tolerance = parameters.get("tolerance")
     TASK_LOGGER.info(
-        f"Parameters before transforming: vectors={vectors}, tolerance={tolerance}"
+        f"Input parameters before transformation: vectors={vectors}, tolerance={tolerance}"
     )
 
-    # TODO: check input hier nochmal??? herausfinden dann mit der api
-
-    # Transform vectors
-    newSetofVectors = []
+    # Transform input vectors into NumPy arrays of complex numbers
+    new_set_of_vectors = []
     try:
         for vector in vectors:
-            complexNumbers = []
-            for tupel in vector:
-                complexNumber = complex(tupel[0], tupel[1])
-                complexNumbers.append(complexNumber)
-            npVector = np.array(complexNumbers)
-            newSetofVectors.append(npVector)
+            complex_numbers = []
+            for pair in vector:
+                complex_number = complex(pair[0], pair[1])
+                complex_numbers.append(complex_number)
+            np_vector = np.array(complex_numbers)
+            new_set_of_vectors.append(np_vector)
+
+        TASK_LOGGER.info(f"Transformed vectors: {new_set_of_vectors}")
+
     except Exception as e:
-        TASK_LOGGER.error(f"Error in transforming vectors: {e}")
+        TASK_LOGGER.error(f"Error while transforming input vectors: {e}")
         raise
 
     try:
-        # Log the call to the function for checking linear dependence
+        # Log and call the function to check linear dependence
         TASK_LOGGER.info(
-            "Calling the function to check linear dependence with parameters: "
-            f"vectors={newSetofVectors}, tolerance={tolerance}"
+            "Invoking 'are_vectors_linearly_dependent' with parameters: "
+            f"vectors={new_set_of_vectors}, tolerance={tolerance}"
         )
 
-        # Call the function to check linear dependence
         result = are_vectors_linearly_dependent(
-            vectors=newSetofVectors, tolerance=tolerance
+            vectors=new_set_of_vectors, tolerance=tolerance
         )
+
+        TASK_LOGGER.info(f"Result of linear dependence analysis: {result}")
 
         # Save the result as a file
-        with SpooledTemporaryFile(mode="w") as output:
-            output.write(f"{result}")
-            output.seek(0)  # Reset file pointer
+        with SpooledTemporaryFile(mode="w") as output_file:
+            output_file.write(f"{result}")
+            output_file.seek(0)  # Reset the file pointer for reading
             STORE.persist_task_result(
                 db_id,
-                output,
-                "out.txt",  # Filename
+                output_file,
+                "out.txt",  # File name
                 "custom/lineardependence-output",  # Data type
-                "text/plain",  # Content-Type
+                "text/plain",  # MIME type
             )
+        TASK_LOGGER.info(f"Result successfully saved for task ID {db_id}.")
 
         return f"{result}"
 
     except Exception as e:
-        TASK_LOGGER.error(f"Error in lineardependence task: {e}")
+        TASK_LOGGER.error(f"Error during 'lineardependence' task execution: {e}")
         raise

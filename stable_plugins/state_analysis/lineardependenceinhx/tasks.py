@@ -12,7 +12,6 @@ from qhana_plugin_runner.storage import STORE
 from . import ClassicalStateAnalysisLineardependenceInHX
 
 TASK_LOGGER = get_task_logger(__name__)
-# TODO fix code
 
 
 @CELERY.task(
@@ -20,80 +19,75 @@ TASK_LOGGER = get_task_logger(__name__)
     bind=True,
 )
 def lineardependenceInHX_task(self, db_id: int) -> str:
-    TASK_LOGGER.info(f"Starting lineardependenceInHX task with db id '{db_id}'")
-    task_data = ProcessingTask.get_by_id(id_=db_id)
 
+    TASK_LOGGER.info(f"Starting lineardependenceInHX task with db id '{db_id}'")
+
+    # Load task data
+    task_data = ProcessingTask.get_by_id(id_=db_id)
+    if not task_data:
+        msg = f"Task data with ID {db_id} could not be loaded!"
+        TASK_LOGGER.error(msg)
+        raise KeyError(msg)
+
+    # Extract parameters and log them
     parameters = loads(task_data.parameters or "{}")
-    TASK_LOGGER.info(f"Parameters are '{task_data.parameters}'")
-    state = parameters.get("state", [])
-    dim_A = parameters.get("dim_A", 0)
-    dim_B = parameters.get("dim_B", 0)
-    singular_value_tolerance = parameters.get("singular_value_tolerance", 1e-10)
-    linear_independence_tolerance = parameters.get("linear_independence_tolerance", 1e-10)
+    TASK_LOGGER.info(f"Extracted parameters: {parameters}")
+
+    vectors = parameters.get("vectors", [])
+    dim_A = parameters.get("dim_A")
+    dim_B = parameters.get("dim_B")
+    singular_value_tolerance = parameters.get("singular_value_tolerance")
+    linear_independence_tolerance = parameters.get("linear_independence_tolerance")
 
     TASK_LOGGER.info(
-        f"Parameters: state={state}, dim_A={dim_A}, dim_B={dim_B}, singular_value_tolerance={singular_value_tolerance}, linear_independence_tolerance={linear_independence_tolerance}"
+        f"Input parameters before transformation: vectors={vectors}, dim_A={dim_A}, dim_B={dim_B}, singular_value_tolerance={singular_value_tolerance}, linear_independence_tolerance={linear_independence_tolerance}"
     )
 
+    # Transform input vectors into NumPy arrays of complex numbers
+    new_set_of_vectors = []
     try:
-        # Convert state to numpy array
-        state_array = []
+        for vector in vectors:
+            complex_numbers = []
+            for pair in vector:
+                complex_number = complex(pair[0], pair[1])
+                complex_numbers.append(complex_number)
+            np_vector = np.array(complex_numbers)
+            new_set_of_vectors.append(np_vector)
 
-        try:
-            # Initialize an empty list to hold the complex numbers
-            complex_list = []
+        TASK_LOGGER.info(f"Transformed vectors: {new_set_of_vectors}")
 
-            # Iterate over each element in the state
-            for val in state:
-                try:
-                    # Try to parse the value as a complex number
-                    complexN = complex(val)
-                    complex_list.append(complexN)
-                except ValueError as e:
-                    raise ValueError(f"Invalid element in 'state': {val}") from e
-            # Convert the list to a numpy array
-            state_array = np.array(complex_list, dtype=complex)
+    except Exception as e:
+        TASK_LOGGER.error(f"Error while transforming input vectors: {e}")
+        raise
 
-        except ValueError as e:
-            TASK_LOGGER.error(f"Failed to cast 'state' elements to complex numbers: {e}")
-            raise ValueError(f"Invalid element in 'state': {e}")
-
-        # Validate dimensions
-        if len(state_array) != dim_A * dim_B:
-            error_msg = f"Dimension mismatch: len(state)={len(state_array)} does not match dim_A * dim_B = {dim_A * dim_B}."
-            TASK_LOGGER.error(error_msg)
-            raise ValueError(error_msg)
-
-        # Log the call to the analyze_linear_dependence_in_hx function
+    try:
+        # Log and call the function to check linear dependence
         TASK_LOGGER.info(
-            "Calling the analyze_linear_dependence_in_hx function with parameters: "
-            f"states={[state_array]}, dim_A={dim_A}, dim_B={dim_B}, "
-            f"singular_value_tolerance={singular_value_tolerance}, "
-            f"linear_independence_tolerance={linear_independence_tolerance}"
-        )
-        # Call the function
-        result = analyze_lineardependenceinhx(
-            states=[state_array],
-            dim_A=dim_A,
-            dim_B=dim_B,
-            singular_value_tolerance=singular_value_tolerance,
-            linear_independence_tolerance=linear_independence_tolerance,
+            "Invoking 'analyze_lineardependenceinhx' with parameters: "
+            f"vectors={new_set_of_vectors}, tolerance={tolerance}"
         )
 
-        # Save the result to a file
-        with SpooledTemporaryFile(mode="w") as output:
-            output.write(f"{result}")
-            output.seek(0)  # Reset file pointer
+        result = analyze_lineardependenceinhx(
+            vectors=new_set_of_vectors, tolerance=tolerance
+        )
+
+        TASK_LOGGER.info(f"Result of linear dependence in hx analysis: {result}")
+
+        # Save the result as a file
+        with SpooledTemporaryFile(mode="w") as output_file:
+            output_file.write(f"{result}")
+            output_file.seek(0)  # Reset the file pointer for reading
             STORE.persist_task_result(
                 db_id,
-                output,
-                "out.txt",  # Filename
-                "custom/schmidtrank-output",  # Data type
-                "text/plain",  # Content-Type
+                output_file,
+                "out.txt",  # File name
+                "custom/lineardependenceIhhhx-output",  # Data type
+                "text/plain",  # MIME type
             )
+        TASK_LOGGER.info(f"Result successfully saved for task ID {db_id}.")
 
         return f"{result}"
 
     except Exception as e:
-        TASK_LOGGER.error(f"Error in schmidtrank task: {e}")
+        TASK_LOGGER.error(f"Error during 'lineardependence in hx' task execution: {e}")
         raise
