@@ -43,7 +43,7 @@ def are_vectors_linearly_dependent(
         raise RuntimeError(f"An error occurred while computing the matrix rank: {e}")
 
 
-def analyze_linear_dependence_in_hx(
+def analyze_lineardependenceinhx(
     states: List[np.ndarray],
     dim_A: int,
     dim_B: int,
