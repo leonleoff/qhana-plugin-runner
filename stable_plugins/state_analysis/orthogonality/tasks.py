@@ -20,52 +20,71 @@ TASK_LOGGER = get_task_logger(__name__)
 )
 def orthogonality_task(self, db_id: int) -> str:
     TASK_LOGGER.info(f"Starting orthogonality task with db id '{db_id}'")
-    task_data = ProcessingTask.get_by_id(id_=db_id)
 
+    # Load task data
+    task_data = ProcessingTask.get_by_id(id_=db_id)
     if not task_data:
-        msg = f"Could not load task data with id {db_id}!"
+        msg = f"Task data with ID {db_id} could not be loaded!"
         TASK_LOGGER.error(msg)
         raise KeyError(msg)
 
+    # Extract parameters and log them
     parameters = loads(task_data.parameters or "{}")
+    TASK_LOGGER.info(f"Extracted parameters: {parameters}")
+
     vectors = parameters.get("vectors", [])
-    tolerance = parameters.get("tolerance", 1e-10)
-
-    TASK_LOGGER.info(f"Parameters: vectors={vectors}, tolerance={tolerance}")
-
-    vector1 = vectors[0]
-    vector2 = vectors[1]
+    tolerance = parameters.get("tolerance")
 
     TASK_LOGGER.info(
-        f"Parameters: vector1={vector1}, vector2={vector2}, tolerance={tolerance}"
+        f"Input parameters before transformation: vectors={vectors}, tolerance={tolerance}"
     )
 
+    # Transform input vectors into NumPy arrays of complex numbers
+    new_set_of_vectors = []
     try:
-        vec1 = np.array(vector1, dtype=complex)
-        vec2 = np.array(vector2, dtype=complex)
+        for vector in vectors:
+            complex_numbers = []
+            for pair in vector:
+                complex_number = complex(pair[0], pair[1])
+                complex_numbers.append(complex_number)
+            np_vector = np.array(complex_numbers)
+            new_set_of_vectors.append(np_vector)
 
-        # Log the call to the are_vectors_orthogonal function
+        TASK_LOGGER.info(f"Transformed vectors: {new_set_of_vectors}")
+
+    except Exception as e:
+        TASK_LOGGER.error(f"Error while transforming input vectors: {e}")
+        raise
+
+    try:
+        # Log and call the function to check linear dependence
+        vec1 = vectors[0]
+        vec2 = vectors[1]
+
         TASK_LOGGER.info(
-            "Calling the are_vectors_orthogonal function with parameters: "
+            "Invoking 'are_vectors_linearly_dependent' with parameters: "
             f"vec1={vec1}, vec2={vec2}, tolerance={tolerance}"
         )
-        # Call the function
+
         result = are_vectors_orthogonal(vec1, vec2, tolerance)
 
-        # Speichere das Ergebnis als Datei
-        with SpooledTemporaryFile(mode="w") as output:
-            output.write(f"{result}")
-            output.seek(0)  # Datei-Pointer zurücksetzen
+        TASK_LOGGER.info(f"Result of otzhgonaoliy analysis: {result}")
+
+        # Save the result as a file
+        with SpooledTemporaryFile(mode="w") as output_file:
+            output_file.write(f"{result}")
+            output_file.seek(0)  # Reset the file pointer for reading
             STORE.persist_task_result(
                 db_id,
-                output,
-                "out.txt",  # Dateiname
-                "custom/orthogonality-output",  # Datentyp
-                "text/plain",  # Content-Type
+                output_file,
+                "out.txt",  # File name
+                "custom/otzhgonaoliy-output",  # Data type
+                "text/plain",  # MIME type
             )
+        TASK_LOGGER.info(f"Result successfully saved for task ID {db_id}.")
 
         return f"{result}"
 
     except Exception as e:
-        TASK_LOGGER.error(f"Error in orthogonality task: {e}")
+        TASK_LOGGER.error(f"Error during 'otzhgonaoliy' task execution: {e}")
         raise

@@ -15,12 +15,12 @@ TASK_LOGGER = get_task_logger(__name__)
 
 
 @CELERY.task(
-    name=f"{ClassicalStateAnalysisLineardependenceInHX.instance.identifier}.schmidtrank_task",
+    name=f"{ClassicalStateAnalysisLineardependenceInHX.instance.identifier}.lineardependenceinhx_task",
     bind=True,
 )
 def lineardependenceInHX_task(self, db_id: int) -> str:
 
-    TASK_LOGGER.info(f"Starting lineardependenceInHX task with db id '{db_id}'")
+    TASK_LOGGER.info(f"Starting 'lineardependenceInHX' task with database ID '{db_id}'.")
 
     # Load task data
     task_data = ProcessingTask.get_by_id(id_=db_id)
@@ -61,17 +61,21 @@ def lineardependenceInHX_task(self, db_id: int) -> str:
         raise
 
     try:
-        # Log and call the function to check linear dependence
+        # Log and call the function to analyze linear dependence in HX
         TASK_LOGGER.info(
             "Invoking 'analyze_lineardependenceinhx' with parameters: "
-            f"vectors={new_set_of_vectors}, tolerance={tolerance}"
+            f"vectors={new_set_of_vectors}, dim_A={dim_A}, dim_B={dim_B}, singular_value_tolerance={singular_value_tolerance}, linear_independence_tolerance={linear_independence_tolerance}"
         )
 
         result = analyze_lineardependenceinhx(
-            vectors=new_set_of_vectors, tolerance=tolerance
+            vectors=new_set_of_vectors,
+            dim_A=dim_A,
+            dim_B=dim_B,
+            singular_value_tolerance=singular_value_tolerance,
+            linear_independence_tolerance=linear_independence_tolerance,
         )
 
-        TASK_LOGGER.info(f"Result of linear dependence in hx analysis: {result}")
+        TASK_LOGGER.info(f"Result of linear dependence in HX analysis: {result}")
 
         # Save the result as a file
         with SpooledTemporaryFile(mode="w") as output_file:
@@ -81,7 +85,7 @@ def lineardependenceInHX_task(self, db_id: int) -> str:
                 db_id,
                 output_file,
                 "out.txt",  # File name
-                "custom/lineardependenceIhhhx-output",  # Data type
+                "custom/lineardependenceinhx-output",  # Data type
                 "text/plain",  # MIME type
             )
         TASK_LOGGER.info(f"Result successfully saved for task ID {db_id}.")
@@ -89,5 +93,5 @@ def lineardependenceInHX_task(self, db_id: int) -> str:
         return f"{result}"
 
     except Exception as e:
-        TASK_LOGGER.error(f"Error during 'lineardependence in hx' task execution: {e}")
+        TASK_LOGGER.error(f"Error during 'lineardependenceInHX' task execution: {e}")
         raise
