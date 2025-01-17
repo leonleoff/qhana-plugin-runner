@@ -42,24 +42,34 @@ echo "Antwort des Tasks:"
 echo "$TASK_RESPONSE"
 echo "-------------------------"
 
-# Extrahiere die Ergebnis-URL aus der Antwort
-RESULT_URL=$(echo "$TASK_RESPONSE" | grep -oP '"href":\s*"\K[^"]+' | grep "/files/")
+# Extrahiere die JSON-Ergebnis-URL
+RESULT_URL=$(echo "$TASK_RESPONSE" | grep -oP '"href":\s*"\K[^"]+' | grep "out.json")
 if [ -z "$RESULT_URL" ]; then
-    echo "Fehler: Keine Ergebnis-URL gefunden!"
+    echo "Fehler: Keine Ergebnis-URL für JSON gefunden!"
     exit 1
 fi
 
-# Vollständige Ergebnis-URL
-FULL_RESULT_URL="${RESULT_URL}"
-echo "Ergebnis-URL gefunden: $FULL_RESULT_URL"
+echo "JSON-Ergebnis-URL gefunden: $RESULT_URL"
 
-# Ergebnisdatei herunterladen und anzeigen
-echo "Lade Ergebnisse von $FULL_RESULT_URL herunter ..."
-curl -s "$FULL_RESULT_URL" -o out.txt
+# Ergebnis abrufen und anzeigen
+echo "Lade JSON-Ergebnisse von $RESULT_URL herunter ..."
+RESULT_JSON=$(curl -s "$RESULT_URL")
 
-echo "Berechnete Ergebnisse (aus 'out.txt'):"
-cat out.txt
+echo "Berechnete JSON-Ergebnisse:"
+echo "$RESULT_JSON"
+echo "-------------------------"
+
+# Ergebnis validieren und "result"-Wert extrahieren
+RESULT_VALUE=$(echo "$RESULT_JSON" | grep -oP '"result":\s*\K[^}]+' | tr -d ' "')
+if [ "$RESULT_VALUE" == "true" ]; then
+    echo "Erfolg: Die Vektoren sind orthogonal."
+elif [ "$RESULT_VALUE" == "false" ]; then
+    echo "Erfolg: Die Vektoren sind nicht orthogonal."
+else
+    echo "Fehler: Unerwarteter Wert im Ergebnis: $RESULT_VALUE"
+    exit 1
+fi
 
 echo "========================="
-echo "Test abgeschlossen!"
+echo "Test erfolgreich abgeschlossen!"
 echo "========================="
