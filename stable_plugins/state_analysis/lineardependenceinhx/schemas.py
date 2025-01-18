@@ -59,11 +59,8 @@ class ClassicalStateAnalysisLineardependenceInHXParametersSchema(FrontendFormBas
 
     @ma.post_load
     def validate_data(self, data, **kwargs):
-        # transform 'tolerance'
-        if data["singularValueTolerance"] == "":
-            data["singularValueTolerance"] = None
-
-        if data["linearDependenceTolerance"] == "":
-            data["linearDependenceTolerance"] = None
-
+        # Transform 'singularValueTolerance' and 'linearDependenceTolerance' using dict.get()
+        for key in ("singularValueTolerance", "linearDependenceTolerance"):
+            if data.get(key) in ("", None):
+                data[key] = None
         return data

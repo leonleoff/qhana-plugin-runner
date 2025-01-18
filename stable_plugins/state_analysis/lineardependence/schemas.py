@@ -34,7 +34,7 @@ class ClassicalStateAnalysisLineardependenceParametersSchema(FrontendFormBaseSch
 
     @ma.post_load
     def validate_data(self, data, **kwargs):
-        # transform 'tolerance'
-        if data["tolerance"] == "":
+        # Transform 'tolerance' using dict.get()
+        if data.get("tolerance") in ("", None):
             data["tolerance"] = None
         return data
