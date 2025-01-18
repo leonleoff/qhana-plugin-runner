@@ -1,3 +1,4 @@
+import json
 from json import loads
 from tempfile import SpooledTemporaryFile
 from typing import Optional
@@ -67,22 +68,39 @@ def lineardependence_task(self, db_id: int) -> str:
             vectors=new_set_of_vectors, tolerance=tolerance
         )
 
-        TASK_LOGGER.info(f"Result of linear dependence analysis: {result}")
+        # JSON Output
+        output_data = {
+            "result": bool(result),  # Explizit in JSON-kompatiblen Typ umwandeln
+        }
 
-        # Save the result as a file
-        with SpooledTemporaryFile(mode="w") as output_file:
-            output_file.write(f"{result}")
-            output_file.seek(0)  # Reset the file pointer for reading
+        # Save the result as a TXT file
+        with SpooledTemporaryFile(mode="w") as txt_file:
+            txt_file.write(str(output_data))  # output_data als String speichern
+            txt_file.seek(0)  # Reset the file pointer for reading
             STORE.persist_task_result(
                 db_id,
-                output_file,
+                txt_file,
                 "out.txt",  # File name
                 "custom/lineardependence-output",  # Data type
                 "text/plain",  # MIME type
             )
-        TASK_LOGGER.info(f"Result successfully saved for task ID {db_id}.")
 
-        return f"{result}"
+        # Save the result as a JSON file
+        with SpooledTemporaryFile(mode="w") as json_file:
+            json.dump(output_data, json_file)  # Schreibe das JSON in die Datei
+            json_file.seek(0)  # Reset the file pointer for reading
+            STORE.persist_task_result(
+                db_id,
+                json_file,
+                "out.json",  # File name
+                "custom/lineardependence-output",  # Data type
+                "application/json",  # MIME type
+            )
+
+        TASK_LOGGER.info(f"Results successfully saved for task ID {db_id}.")
+
+        # Return JSON data
+        return json.dumps(output_data)  # Rückgabe des JSON-Strings
 
     except Exception as e:
         TASK_LOGGER.error(f"Error during 'lineardependence' task execution: {e}")
