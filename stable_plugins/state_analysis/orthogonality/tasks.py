@@ -84,7 +84,7 @@ def orthogonality_task(self, db_id: int) -> str:
                 db_id,
                 txt_file,
                 "out.txt",  # File name
-                "custom/orthogonality-output",  # Data type
+                "custom/lineardependenceinhx-output",  # Data type
                 "text/plain",  # MIME type
             )
 
@@ -96,7 +96,7 @@ def orthogonality_task(self, db_id: int) -> str:
                 db_id,
                 json_file,
                 "out.json",  # File name
-                "custom/orthogonality-output",  # Data type
+                "custom/lineardependenceinhx-output",  # Data type
                 "application/json",  # MIME type
             )
 
@@ -106,5 +106,5 @@ def orthogonality_task(self, db_id: int) -> str:
         return json.dumps(output_data)  # Rückgabe des JSON-Strings
 
     except Exception as e:
-        TASK_LOGGER.error(f"Error during 'orthogonality' task execution: {e}")
+        TASK_LOGGER.error(f"Error during 'lineardependenceInHX' task execution: {e}")
         raise
