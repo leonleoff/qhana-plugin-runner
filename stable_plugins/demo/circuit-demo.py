@@ -26,7 +26,6 @@ from flask.templating import render_template
 from flask.views import MethodView
 from flask.wrappers import Response
 from marshmallow import EXCLUDE, fields
-
 from qhana_plugin_runner.api.extra_fields import EnumField
 from qhana_plugin_runner.api.plugin_schemas import (
     EntryPoint,
@@ -62,7 +61,7 @@ from qhana_plugin_runner.tasks import (
 )
 from qhana_plugin_runner.util.plugins import QHAnaPluginBase, plugin_identifier
 
-_plugin_name = "circuit-demo"
+_plugin_name = "circuit-demoa"
 __version__ = "v1.0.0"
 _identifier = plugin_identifier(_plugin_name, __version__)
 

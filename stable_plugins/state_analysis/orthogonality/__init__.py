@@ -34,7 +34,7 @@ class ClassicalStateAnalysisOrthogonality(QHAnaPluginBase):
     name = _plugin_name
     version = __version__
     description = "Analyzes if two classical state vectors are orthogonal."
-    tags = ["classical-state-analysis", "orthogonality"]
+    tags = ["classical-state-analysis", "orthogonality", "circuit-executor", "qasm-2"]
 
     def __init__(self, app: Optional[Flask]) -> None:
         super().__init__(app)
