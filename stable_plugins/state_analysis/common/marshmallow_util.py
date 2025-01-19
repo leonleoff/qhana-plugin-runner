@@ -1,6 +1,7 @@
 import json
 
 import marshmallow as ma
+from qhana_plugin_runner.api.util import FileUrl
 
 
 class TOLERANCE(ma.fields.Float):
@@ -93,6 +94,11 @@ class SETOFCOMPLEXVECTORS(ma.fields.Field):
     """Field for deserializing a set of complex vectors."""
 
     def _deserialize(self, value, attr, data, **kwargs):
+
+        # when empty
+        if value in (None, ""):
+            return ""
+
         # Check if the value is a string and try to parse it into a list or tuple
         if isinstance(value, str):
             try:
@@ -132,6 +138,10 @@ class SETOFTWOCOMPLEXVECTORS(ma.fields.Field):
 
     def _deserialize(self, value, attr, data, **kwargs):
 
+        # when empty
+        if value in (None, ""):
+            return ""
+
         value = SETOFCOMPLEXVECTORS().deserialize(value)
 
         # Validate that there are exactly two vectors in the set
@@ -140,3 +150,12 @@ class SETOFTWOCOMPLEXVECTORS(ma.fields.Field):
                 f"Invalid input. Expected a list of exactly 2 vectors, but the input was {value}."
             )
         return value
+
+
+class NullAbleFileUrl(FileUrl):
+    def _deserialize(self, value, attr, data, **kwargs):
+        # Return an empty string if the value is None or empty
+        if value in (None, ""):
+            return ""
+        # Otherwise, call the parent class's _deserialize method
+        return super()._deserialize(value, attr, data, **kwargs)

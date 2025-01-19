@@ -1,6 +1,6 @@
 import marshmallow as ma
-from common.marshmallow_util import SETOFTWOCOMPLEXVECTORS, TOLERANCE
-from qhana_plugin_runner.api.util import FileUrl, FrontendFormBaseSchema
+from common.marshmallow_util import SETOFTWOCOMPLEXVECTORS, TOLERANCE, NullAbleFileUrl
+from qhana_plugin_runner.api.util import FrontendFormBaseSchema
 
 
 class ClassicalStateAnalysisOrthogonalityParametersSchema(FrontendFormBaseSchema):
@@ -30,9 +30,9 @@ class ClassicalStateAnalysisOrthogonalityParametersSchema(FrontendFormBaseSchema
         },
     )
 
-    circuit = FileUrl(
+    circuit = NullAbleFileUrl(
         required=False,
-        allow_none=False,
+        allow_none=True,
         data_input_type="executable/circuit",
         data_content_types="text/x-qasm",
         metadata={

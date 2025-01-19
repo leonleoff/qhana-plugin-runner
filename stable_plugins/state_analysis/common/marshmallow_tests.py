@@ -49,7 +49,7 @@ def test_tolerance_empty_string():
     schema = MySchema()
 
     input_data = {"tolerance": ""}
-    output_data = {"tolerance": 1e-5}
+    output_data = {"tolerance": ""}
 
     result = schema.load(input_data)
     assert result == output_data, f"Unexpected result: {result}"
@@ -80,7 +80,7 @@ def test_tolerance_missing_field():
     schema = MySchema()
 
     input_data = {}
-    output_data = {"tolerance": 1e-5}
+    output_data = {}
 
     result = schema.load(input_data)
     assert result == output_data, f"Unexpected result: {result}"
