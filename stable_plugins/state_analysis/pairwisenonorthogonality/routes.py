@@ -18,22 +18,19 @@ from qhana_plugin_runner.api.plugin_schemas import (
 from qhana_plugin_runner.db.models.tasks import ProcessingTask
 from qhana_plugin_runner.tasks import save_task_error, save_task_result
 
-from . import (
-    PAIRWISE_NON_ORTHOGONALITY_BLP,
-    ClassicalStateAnalysisPairwiseNonOrthogonality,
-)
-from .schemas import PairwiseNonOrthogonalityParametersSchema
-from .tasks import pairwise_non_orthogonality_task
+from . import PAIRWISE_ORTHOGONALITY_BLP, ClassicalStateAnalysisPairwiseOrthogonality
+from .schemas import PairwiseOrthogonalityParametersSchema
+from .tasks import pairwise_orthogonality_task
 
 
-@PAIRWISE_NON_ORTHOGONALITY_BLP.route("/")
+@PAIRWISE_ORTHOGONALITY_BLP.route("/")
 class PluginsView(MethodView):
-    """Plugins collection resource for pairwise non-orthogonality."""
+    """Plugins collection resource for pairwise-orthogonality."""
 
-    @PAIRWISE_NON_ORTHOGONALITY_BLP.response(HTTPStatus.OK, PluginMetadataSchema())
+    @PAIRWISE_ORTHOGONALITY_BLP.response(HTTPStatus.OK, PluginMetadataSchema())
     def get(self):
         """Return the plugin metadata."""
-        plugin = ClassicalStateAnalysisPairwiseNonOrthogonality.instance
+        plugin = ClassicalStateAnalysisPairwiseOrthogonality.instance
         if plugin is None:
             abort(HTTPStatus.INTERNAL_SERVER_ERROR)
 
@@ -44,8 +41,8 @@ class PluginsView(MethodView):
             version=plugin.version,
             type=PluginType.processing,
             entry_point=EntryPoint(
-                href=url_for(f"{PAIRWISE_NON_ORTHOGONALITY_BLP.name}.ProcessView"),
-                ui_href=url_for(f"{PAIRWISE_NON_ORTHOGONALITY_BLP.name}.MicroFrontend"),
+                href=url_for(f"{PAIRWISE_ORTHOGONALITY_BLP.name}.ProcessView"),
+                ui_href=url_for(f"{PAIRWISE_ORTHOGONALITY_BLP.name}.MicroFrontend"),
                 plugin_dependencies=[],
                 data_input=[
                     DataMetadata(
@@ -56,7 +53,7 @@ class PluginsView(MethodView):
                 ],
                 data_output=[
                     DataMetadata(
-                        data_type="custom/pairwise-non-orthogonality-output",
+                        data_type="custom/pairwise-orthogonality-output",
                         content_type=["text/plain"],
                         required=True,
                     )
@@ -66,9 +63,9 @@ class PluginsView(MethodView):
         )
 
 
-@PAIRWISE_NON_ORTHOGONALITY_BLP.route("/ui/")
+@PAIRWISE_ORTHOGONALITY_BLP.route("/ui/")
 class MicroFrontend(MethodView):
-    """Micro frontend for pairwise non-orthogonality."""
+    """Micro frontend for pairwise-orthogonality."""
 
     # Beispiel-Eingaben
     vectors_example = [
@@ -81,12 +78,12 @@ class MicroFrontend(MethodView):
         "tolerance": "1e-10",
     }
 
-    @PAIRWISE_NON_ORTHOGONALITY_BLP.html_response(
+    @PAIRWISE_ORTHOGONALITY_BLP.html_response(
         HTTPStatus.OK,
-        description="Micro frontend of the pairwise non-orthogonality plugin.",
+        description="Micro frontend of the pairwise-orthogonality plugin.",
     )
-    @PAIRWISE_NON_ORTHOGONALITY_BLP.arguments(
-        PairwiseNonOrthogonalityParametersSchema(
+    @PAIRWISE_ORTHOGONALITY_BLP.arguments(
+        PairwiseOrthogonalityParametersSchema(
             partial=True, unknown=EXCLUDE, validate_errors_as_result=True
         ),
         location="query",
@@ -96,12 +93,12 @@ class MicroFrontend(MethodView):
         """Return the micro frontend (GET)."""
         return self.render(request.args, errors, valid=False)
 
-    @PAIRWISE_NON_ORTHOGONALITY_BLP.html_response(
+    @PAIRWISE_ORTHOGONALITY_BLP.html_response(
         HTTPStatus.OK,
-        description="Micro frontend of the pairwise non-orthogonality plugin.",
+        description="Micro frontend of the pairwise-orthogonality plugin.",
     )
-    @PAIRWISE_NON_ORTHOGONALITY_BLP.arguments(
-        PairwiseNonOrthogonalityParametersSchema(
+    @PAIRWISE_ORTHOGONALITY_BLP.arguments(
+        PairwiseOrthogonalityParametersSchema(
             partial=True, unknown=EXCLUDE, validate_errors_as_result=True
         ),
         location="form",
@@ -112,11 +109,11 @@ class MicroFrontend(MethodView):
         return self.render(request.form, errors, valid=(not errors))
 
     def render(self, data: Mapping, errors: dict, valid: bool):
-        plugin = ClassicalStateAnalysisPairwiseNonOrthogonality.instance
+        plugin = ClassicalStateAnalysisPairwiseOrthogonality.instance
         if plugin is None:
             abort(HTTPStatus.INTERNAL_SERVER_ERROR)
 
-        schema = PairwiseNonOrthogonalityParametersSchema()
+        schema = PairwiseOrthogonalityParametersSchema()
         result = None
         task_id = data.get("task_id")
         if task_id:
@@ -134,38 +131,38 @@ class MicroFrontend(MethodView):
                 values=data,
                 errors=errors,
                 result=result,
-                process=url_for(f"{PAIRWISE_NON_ORTHOGONALITY_BLP.name}.ProcessView"),
+                process=url_for(f"{PAIRWISE_ORTHOGONALITY_BLP.name}.ProcessView"),
                 help_text="Check if all vectors are pairwise orthogonal. Returns True or False.",
                 example_values=url_for(
-                    f"{PAIRWISE_NON_ORTHOGONALITY_BLP.name}.MicroFrontend",
+                    f"{PAIRWISE_ORTHOGONALITY_BLP.name}.MicroFrontend",
                     **self.example_inputs,
                 ),
             )
         )
 
 
-@PAIRWISE_NON_ORTHOGONALITY_BLP.route("/process/")
+@PAIRWISE_ORTHOGONALITY_BLP.route("/process/")
 class ProcessView(MethodView):
     """Start a long running processing task."""
 
-    @PAIRWISE_NON_ORTHOGONALITY_BLP.arguments(
-        PairwiseNonOrthogonalityParametersSchema(unknown=EXCLUDE),
+    @PAIRWISE_ORTHOGONALITY_BLP.arguments(
+        PairwiseOrthogonalityParametersSchema(unknown=EXCLUDE),
         location="form",
     )
-    @PAIRWISE_NON_ORTHOGONALITY_BLP.response(HTTPStatus.SEE_OTHER)
+    @PAIRWISE_ORTHOGONALITY_BLP.response(HTTPStatus.SEE_OTHER)
     def post(self, arguments):
         """Start the pairwise-non-orthogonality check task."""
         from qhana_plugin_runner.db.models.tasks import ProcessingTask
 
         db_task = ProcessingTask(
-            task_name=pairwise_non_orthogonality_task.name, parameters=dumps(arguments)
+            task_name=pairwise_orthogonality_task.name, parameters=dumps(arguments)
         )
         db_task.save(commit=True)
 
         # Verkette Tasks (falls benötigt), hier aber nur eine
-        task_chain = pairwise_non_orthogonality_task.s(
+        task_chain = pairwise_orthogonality_task.s(db_id=db_task.id) | save_task_result.s(
             db_id=db_task.id
-        ) | save_task_result.s(db_id=db_task.id)
+        )
         task_chain.link_error(save_task_error.s(db_id=db_task.id))
         task_chain.apply_async()
 

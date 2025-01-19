@@ -9,17 +9,17 @@ from qhana_plugin_runner.celery import CELERY
 from qhana_plugin_runner.db.models.tasks import ProcessingTask
 from qhana_plugin_runner.storage import STORE
 
-from . import ClassicalStateAnalysisPairwiseNonOrthogonality
+from . import ClassicalStateAnalysisPairwiseOrthogonality
 
 TASK_LOGGER = get_task_logger(__name__)
 
 
 @CELERY.task(
-    name=f"{ClassicalStateAnalysisPairwiseNonOrthogonality.instance.identifier}.pairwise_non_orthogonality_task",
+    name=f"{ClassicalStateAnalysisPairwiseOrthogonality.instance.identifier}.pairwise_orthogonality_task",
     bind=True,
 )
-def pairwise_non_orthogonality_task(self, db_id: int) -> str:
-    TASK_LOGGER.info(f"Starting 'pairwise_non_orthogonality_task' with db_id={db_id}")
+def pairwise_orthogonality_task(self, db_id: int) -> str:
+    TASK_LOGGER.info(f"Starting 'pairwise_orthogonality_task' with db_id={db_id}")
 
     task_data = ProcessingTask.get_by_id(id_=db_id)
     if not task_data:
@@ -68,7 +68,7 @@ def pairwise_non_orthogonality_task(self, db_id: int) -> str:
             db_id,
             txt_file,
             "out.txt",
-            "custom/pairwise-non-orthogonality-output",
+            "custom/pairwise-orthogonality-output",
             "text/plain",
         )
 
@@ -79,10 +79,10 @@ def pairwise_non_orthogonality_task(self, db_id: int) -> str:
             db_id,
             json_file,
             "out.json",
-            "custom/pairwise-non-orthogonality-output",
+            "custom/pairwise-orthogonality-output",
             "application/json",
         )
 
-    TASK_LOGGER.info(f"Pairwise Non-Orthogonality result: {output_data}")
+    TASK_LOGGER.info(f"Pairwise Orthogonality result: {output_data}")
 
     return json.dumps(output_data)

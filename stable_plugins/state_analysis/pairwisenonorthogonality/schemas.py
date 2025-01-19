@@ -3,8 +3,8 @@ from common.marshmallow_util import SETOFCOMPLEXVECTORS, TOLERANCE
 from qhana_plugin_runner.api.util import FrontendFormBaseSchema
 
 
-class PairwiseNonOrthogonalityParametersSchema(FrontendFormBaseSchema):
-    """Schema for pairwise non-orthogonality plugin."""
+class PairwiseOrthogonalityParametersSchema(FrontendFormBaseSchema):
+    """Schema for pairwise-orthogonality plugin."""
 
     vectors = SETOFCOMPLEXVECTORS(
         required=True,
