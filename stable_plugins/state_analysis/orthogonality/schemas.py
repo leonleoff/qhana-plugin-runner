@@ -1,19 +1,18 @@
 import marshmallow as ma
 from common.marshmallow_util import SETOFTWOCOMPLEXVECTORS, TOLERANCE
-
 from qhana_plugin_runner.api.util import FileUrl, FrontendFormBaseSchema
 
 
 class ClassicalStateAnalysisOrthogonalityParametersSchema(FrontendFormBaseSchema):
-    """Schema for classical state analysis of orthogonality."""
+    """Schema for classical state analysis parameters, focusing on orthogonality analysis."""
 
     vectors = SETOFTWOCOMPLEXVECTORS(
         required=False,
         metadata={
             "label": "Input Vectors",
             "description": (
-                "A set of two complex vectors"
-                "Example: [[[1.0, 0.0],[1.0, 0.0],[1.0, 0.0]],[[1.0, 0.0],[1.0, 0.0],[1.0, 0.0]]"
+                "A set of two complex vectors to analyze. "
+                "Example: [[[1.0, 0.0], [1.0, 0.0], [1.0, 0.0]], [[1.0, 0.0], [1.0, 0.0], [1.0, 0.0]]]"
             ),
             "input_type": "textarea",
         },
@@ -22,16 +21,15 @@ class ClassicalStateAnalysisOrthogonalityParametersSchema(FrontendFormBaseSchema
     innerproduct_tolerance = TOLERANCE(
         required=False,
         metadata={
-            "label": "Tolerance",
+            "label": "Inner Product Tolerance",
             "description": (
-                "Provide an optional tolerance value for the analysis. "
-                "If not provided, the default value: `1e-10` will be used."
+                "Optional tolerance value for the inner product calculation. "
+                "If not provided, the default value is `1e-10`."
             ),
             "input_type": "text",
         },
     )
 
-    # TODO: Text
     circuit = FileUrl(
         required=False,
         allow_none=False,
@@ -39,7 +37,10 @@ class ClassicalStateAnalysisOrthogonalityParametersSchema(FrontendFormBaseSchema
         data_content_types="text/x-qasm",
         metadata={
             "label": "OpenQASM Circuit",
-            "description": "URL to a quantum circuit in the OpenQASM format mit dem map wo steht von wo bis wo die vectoren und so gehen .",
+            "description": (
+                "URL to a quantum circuit in the OpenQASM format. The circuit should specify "
+                "how vectors are mapped and processed."
+            ),
             "input_type": "text",
         },
     )
@@ -47,10 +48,11 @@ class ClassicalStateAnalysisOrthogonalityParametersSchema(FrontendFormBaseSchema
     probability_tolerance = TOLERANCE(
         required=False,
         metadata={
-            "label": "Tolerance",
+            "label": "Probability Tolerance",
             "description": (
-                "Die warhscheinlichkeit die ein wert mindestens haben muss bei dem decoding von den quantenzuständen dass er als bit mit dem wert 1 und nicht 0 interpretiert wird"
-                "If not provided, the default value: `1e-5` will be used."
+                "The minimum probability threshold for interpreting quantum states during decoding. "
+                "Values below this threshold will be interpreted as 0 rather than 1. "
+                "If not provided, the default value is `1e-5`."
             ),
             "input_type": "text",
         },
@@ -58,38 +60,43 @@ class ClassicalStateAnalysisOrthogonalityParametersSchema(FrontendFormBaseSchema
 
     @ma.post_load
     def validate_data(self, data, **kwargs):
-        # Transform 'tolerance'
+        """Validate and preprocess the provided data."""
+
+        # Default handling for tolerances
         if data.get("innerproduct_tolerance") in ("", None):
             data["innerproduct_tolerance"] = None
         if data.get("probability_tolerance") in ("", None):
             data["probability_tolerance"] = None
 
-        # case vector
+        # Case: Vectors provided
         if data.get("vectors") not in ("", None):
 
-            # case vector and circuiturl
+            # Ensure circuit URL is not also provided
             if data.get("circuit") not in ("", None):
                 raise Exception(
-                    "Es darf nicht beides angegeben werden vectors und circuiturl es muss ein eindrutige input typ sein"
+                    "Only one input type is allowed: either 'vectors' or 'circuit'. Both cannot be provided."
                 )
 
-            # case vector not circuiturl
+            # Clear circuit-related fields if vectors are used
             data["circuit"] = None
             data["probability_tolerance"] = None
             return data
 
-        # case circuiturl
+        # Case: Circuit URL provided
         if data.get("circuit") not in ("", None):
-            # case vector and circuiturl
+
+            # Ensure vectors are not also provided
             if data.get("vectors") not in ("", None):
                 raise Exception(
-                    "Es darf nicht beides angegeben werden vectors und circuiturl es muss ein eindrutige input typ sein"
+                    "Only one input type is allowed: either 'vectors' or 'circuit'. Both cannot be provided."
                 )
 
-            # case circuiturl not vector
+            # Clear vector-related fields if circuit is used
             data["vectors"] = None
             data["innerproduct_tolerance"] = None
             return data
+
+        # Raise error if neither vectors nor circuit are provided
         raise Exception(
-            "Es darf nicht nichts angegeben werden entwerder muss die url da sein doer die vectoren"
+            "At least one input must be provided: either 'vectors' or 'circuit'."
         )
