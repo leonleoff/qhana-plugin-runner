@@ -1,6 +1,5 @@
 import marshmallow as ma
 from common.marshmallow_util import SETOFTWOCOMPLEXVECTORS, TOLERANCE, NullAbleFileUrl
-
 from qhana_plugin_runner.api.util import FrontendFormBaseSchema
 
 
@@ -24,8 +23,7 @@ class ClassicalStateAnalysisOrthogonalityParametersSchema(FrontendFormBaseSchema
         metadata={
             "label": "Inner Product Tolerance",
             "description": (
-                "Optional orthogonality_task value for the inner product calculation. "
-                "If not provided, the default value is `1e-10`."
+                "Optional threshold for the inner product. If not provided, default `1e-10`."
             ),
             "input_type": "text",
         },
@@ -39,8 +37,7 @@ class ClassicalStateAnalysisOrthogonalityParametersSchema(FrontendFormBaseSchema
         metadata={
             "label": "OpenQASM Circuit",
             "description": (
-                "URL to a quantum circuit in the OpenQASM format. The circuit should specify "
-                "how vectors are mapped and processed."
+                "URL to a quantum circuit in OpenQASM format. The file itself is JSON in text/x-qasm with fields {qasm_code, circuit_borders}."
             ),
             "input_type": "text",
         },
@@ -51,9 +48,7 @@ class ClassicalStateAnalysisOrthogonalityParametersSchema(FrontendFormBaseSchema
         metadata={
             "label": "Probability Tolerance",
             "description": (
-                "The minimum probability threshold for interpreting quantum states during decoding. "
-                "Values below this threshold will be interpreted as 0 rather than 1. "
-                "If not provided, the default value is `1e-5`."
+                "Min probability threshold when decoding the circuit. Default ~1e-5 or so."
             ),
             "input_type": "text",
         },
@@ -63,41 +58,32 @@ class ClassicalStateAnalysisOrthogonalityParametersSchema(FrontendFormBaseSchema
     def validate_data(self, data, **kwargs):
         """Validate and preprocess the provided data."""
 
-        # Default handling for tolerances
+        # sanitize
         if data.get("innerproduct_tolerance") in ("", None):
             data["innerproduct_tolerance"] = None
         if data.get("probability_tolerance") in ("", None):
             data["probability_tolerance"] = None
 
-        # Case: Vectors provided
+        # case A: vectors
         if data.get("vectors") not in ("", None):
-
-            # Ensure circuit URL is not also provided
             if data.get("circuit") not in ("", None):
                 raise Exception(
-                    "Only one input type is allowed: either 'vectors' or 'circuit'. Both cannot be provided."
+                    "Either 'vectors' OR 'circuit' can be provided, not both!"
                 )
-
-            # Clear circuit-related fields if vectors are used
+            # circuit-Felder leer machen
             data["circuit"] = None
             data["probability_tolerance"] = None
             return data
 
-        # Case: Circuit URL provided
+        # case B: circuit
         if data.get("circuit") not in ("", None):
-
-            # Ensure vectors are not also provided
             if data.get("vectors") not in ("", None):
                 raise Exception(
-                    "Only one input type is allowed: either 'vectors' or 'circuit'. Both cannot be provided."
+                    "Either 'vectors' OR 'circuit' can be provided, not both!"
                 )
-
-            # Clear vector-related fields if circuit is used
             data["vectors"] = None
             data["innerproduct_tolerance"] = None
             return data
 
-        # Raise error if neither vectors nor circuit are provided
-        raise Exception(
-            "At least one input must be provided: either 'vectors' or 'circuit'."
-        )
+        # keins
+        raise Exception("Must provide either 'vectors' or 'circuit'!")
