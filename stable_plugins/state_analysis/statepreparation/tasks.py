@@ -5,6 +5,7 @@ from tempfile import SpooledTemporaryFile
 from typing import Optional
 
 from celery.utils.log import get_task_logger
+
 from qhana_plugin_runner.celery import CELERY
 from qhana_plugin_runner.db.models.tasks import ProcessingTask
 from qhana_plugin_runner.storage import STORE
@@ -111,7 +112,7 @@ def vector_encoding_task(self, db_id: int) -> str:
 
     # Speichere QASM als "encoded_circuit.qasm"
     with SpooledTemporaryFile(mode="w") as qasm_file:
-        qasm_file.write(qasm_code)
+        qasm_file.write(str(qasm_code))
         qasm_file.seek(0)
         STORE.persist_task_result(
             db_id,

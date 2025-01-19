@@ -1,10 +1,13 @@
 from http import HTTPStatus
+from json import dumps
 from typing import Mapping, Optional
 
+from celery.canvas import chain
 from flask import Response, abort, redirect, render_template, request
 from flask.helpers import url_for
 from flask.views import MethodView
 from marshmallow import EXCLUDE
+
 from qhana_plugin_runner.api.plugin_schemas import (
     DataMetadata,
     EntryPoint,
@@ -134,22 +137,28 @@ class ProcessView(MethodView):
     """Start a long running processing task."""
 
     @ENCODING_BLP.arguments(
-        VectorsToQasmParametersSchema(unknown=EXCLUDE), location="form"
+        VectorsToQasmParametersSchema(unknown=EXCLUDE),
+        location="form",
     )
     @ENCODING_BLP.response(HTTPStatus.SEE_OTHER)
+    @ENCODING_BLP.require_jwt("jwt", optional=True)
     def post(self, arguments):
         """Start the vector-encoding task."""
         db_task = ProcessingTask(
-            task_name=vector_encoding_task.name,
-            parameters=VectorsToQasmParametersSchema().dumps(arguments),
+            task_name=vector_encoding_task.name, parameters=dumps(arguments)
         )
         db_task.save(commit=True)
 
-        # Start the Celery chain
-        task = vector_encoding_task.s(db_id=db_task.id) | save_task_result.s(
+        # Start the task
+        task: chain = vector_encoding_task.s(db_id=db_task.id) | save_task_result.s(
             db_id=db_task.id
         )
         task.link_error(save_task_error.s(db_id=db_task.id))
         task.apply_async()
 
-        return redirect(f"/api/tasks/{db_task.id}", code=HTTPStatus.SEE_OTHER)
+        db_task.save(commit=True)
+
+        # Redirect to the task view
+        return redirect(
+            url_for("tasks-api.TaskView", task_id=str(db_task.id)), HTTPStatus.SEE_OTHER
+        )
