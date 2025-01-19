@@ -110,9 +110,15 @@ def vector_encoding_task(self, db_id: int) -> str:
     # Rufe encoding auf
     qasm_code, circuit_borders, qbits = binary_encoding(python_vectors)
 
+    # Speichere output als JSON
+    output = {
+        "circuitBorders": circuit_borders,
+        "qasm_code": qasm_code,
+    }
+
     # Speichere QASM als "encoded_circuit.qasm"
     with SpooledTemporaryFile(mode="w") as qasm_file:
-        qasm_file.write(str(qasm_code))
+        qasm_file.write(str(output))
         qasm_file.seek(0)
         STORE.persist_task_result(
             db_id,
@@ -122,13 +128,8 @@ def vector_encoding_task(self, db_id: int) -> str:
             "text/x-qasm",
         )
 
-    # Speichere circuit_borders als JSON
-    circuit_borders_dict = {
-        "circuitBorders": circuit_borders,
-        "encodedQbits": qbits,
-    }
     with SpooledTemporaryFile(mode="w") as borders_file:
-        json.dump(circuit_borders_dict, borders_file)
+        json.dump(output, borders_file)
         borders_file.seek(0)
         STORE.persist_task_result(
             db_id,
