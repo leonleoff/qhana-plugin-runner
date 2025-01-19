@@ -73,7 +73,7 @@ def schmidtrank_task(self, db_id: int) -> str:
 
         # JSON Output
         output_data = {
-            "result": bool(result),  # Explizit in JSON-kompatiblen Typ umwandeln
+            "result": int(result),  # Explizit in JSON-kompatiblen Typ umwandeln
         }
 
         # Save the result as a TXT file
