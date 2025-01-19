@@ -7,7 +7,6 @@ from flask import Response, abort, redirect, render_template, request
 from flask.helpers import url_for
 from flask.views import MethodView
 from marshmallow import EXCLUDE
-
 from qhana_plugin_runner.api.plugin_schemas import (
     DataMetadata,
     EntryPoint,
@@ -77,8 +76,8 @@ class MicroFrontend(MethodView):
     """Simple micro-frontend for the vector encoding plugin."""
 
     example_vectors = [
-        [[5.0, 0.0], [0.0, 1.0]],
         [[1.0, 0.0], [0.0, 0.0]],
+        [[0.0, 0.0], [0.0, 1.0]],
     ]
 
     example_inputs = {

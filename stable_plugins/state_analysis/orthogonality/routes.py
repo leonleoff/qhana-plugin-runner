@@ -10,6 +10,7 @@ from flask.helpers import url_for
 from flask.templating import render_template
 from flask.views import MethodView
 from marshmallow import EXCLUDE
+
 from qhana_plugin_runner.api.plugin_schemas import (
     DataMetadata,
     EntryPoint,
@@ -83,7 +84,7 @@ class MicroFrontend(MethodView):
 
     example_inputs = {
         "vectors": f"{vectors}",
-        "tolerance": "0",
+        "orthogonality_task": "0",
     }
 
     @CLASSICAL_ANALYSIS_ORTHOGONALITY_BLP.html_response(
@@ -142,7 +143,7 @@ class MicroFrontend(MethodView):
                 process=url_for(
                     f"{CLASSICAL_ANALYSIS_ORTHOGONALITY_BLP.name}.ProcessView"
                 ),
-                help_text="Provide two vectors and a tolerance to check their orthogonality.",
+                help_text="Provide two vectors and a orthogonality_task to check their orthogonality. oder ",
                 example_values=url_for(
                     f"{CLASSICAL_ANALYSIS_ORTHOGONALITY_BLP.name}.MicroFrontend",
                     **self.example_inputs,

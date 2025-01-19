@@ -35,10 +35,10 @@ def orthogonality_task(self, db_id: int) -> str:
     TASK_LOGGER.info(f"Extracted parameters: {parameters}")
 
     vectors = parameters.get("vectors", [])
-    tolerance = parameters.get("tolerance")
+    orthogonality_task = parameters.get("orthogonality_task")
 
     TASK_LOGGER.info(
-        f"Input parameters before transformation: vectors={vectors}, tolerance={tolerance}"
+        f"Input parameters before transformation: vectors={vectors}, orthogonality_task={orthogonality_task}"
     )
 
     # Transform input vectors into NumPy arrays of complex numbers
@@ -65,10 +65,10 @@ def orthogonality_task(self, db_id: int) -> str:
 
         TASK_LOGGER.info(
             "Invoking 'are_vectors_orthogonal' with parameters: "
-            f"vec1={vec1}, vec2={vec2}, tolerance={tolerance}"
+            f"vec1={vec1}, vec2={vec2}, orthogonality_task={orthogonality_task}"
         )
 
-        result = are_vectors_orthogonal(vec1, vec2, tolerance)
+        result = are_vectors_orthogonal(vec1, vec2, orthogonality_task)
 
         TASK_LOGGER.info(f"Result of orthogonality analysis: {result}")
 

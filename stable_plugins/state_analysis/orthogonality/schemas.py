@@ -1,5 +1,6 @@
 import marshmallow as ma
 from common.marshmallow_util import SETOFTWOCOMPLEXVECTORS, TOLERANCE, NullAbleFileUrl
+
 from qhana_plugin_runner.api.util import FrontendFormBaseSchema
 
 
@@ -23,7 +24,7 @@ class ClassicalStateAnalysisOrthogonalityParametersSchema(FrontendFormBaseSchema
         metadata={
             "label": "Inner Product Tolerance",
             "description": (
-                "Optional tolerance value for the inner product calculation. "
+                "Optional orthogonality_task value for the inner product calculation. "
                 "If not provided, the default value is `1e-10`."
             ),
             "input_type": "text",
