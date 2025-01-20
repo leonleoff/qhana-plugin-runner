@@ -6,8 +6,10 @@ from tempfile import SpooledTemporaryFile
 import numpy as np
 from celery.utils.log import get_task_logger
 from common.algorithms import are_vectors_orthogonal
+from common.encoding_registry import EncodingRegistry
 from qhana_plugin_runner.celery import CELERY
 from qhana_plugin_runner.db.models.tasks import ProcessingTask
+from qhana_plugin_runner.requests import open_url
 from qhana_plugin_runner.storage import STORE
 
 from . import ClassicalStateAnalysisOrthogonalPartitioningResistant
@@ -20,6 +22,11 @@ TASK_LOGGER = get_task_logger(__name__)
     bind=True,
 )
 def orthogonal_partitioning_resistant_task(self, db_id: int) -> str:
+    """
+    Either uses multiple vectors or decodes them from a .qcd circuit,
+    then builds a graph (edge=orthogonal) and checks connectivity.
+    """
+
     TASK_LOGGER.info(
         f"Starting 'orthogonal_partitioning_resistant_task' with db_id={db_id}"
     )
@@ -31,66 +38,78 @@ def orthogonal_partitioning_resistant_task(self, db_id: int) -> str:
         raise KeyError(msg)
 
     parameters = loads(task_data.parameters or "{}")
-    vectors = parameters.get("vectors", [])
-    tolerance = parameters.get("tolerance")
+    vectors = parameters.get("vectors")
+    tolerance = parameters.get("tolerance") or 1e-10
+    circuit_url = parameters.get("circuit")
+    prob_tol = parameters.get("probability_tolerance") or 1e-5
 
-    TASK_LOGGER.info(f"Parameters: vectors={vectors}, tolerance={tolerance}")
+    TASK_LOGGER.info(
+        f"Parameters: vectors={vectors}, circuit={circuit_url}, tol={tolerance}"
+    )
 
-    # Transform into numpy arrays
-    np_vectors = []
     try:
-        for vec in vectors:
-            complex_numbers = [complex(r, i) for (r, i) in vec]
-            np_vectors.append(np.array(complex_numbers))
-    except Exception as e:
-        TASK_LOGGER.error(f"Error creating NumPy arrays: {e}")
-        raise
+        if vectors is not None:
+            # CASE A: direct vectors
+            np_vectors = []
+            for vec in vectors:
+                cnums = [complex(r, i) for (r, i) in vec]
+                np_vectors.append(np.array(cnums))
+        elif circuit_url is not None:
+            # CASE B: decode from circuit
+            with open_url(circuit_url) as resp:
+                qcd_str = resp.text
+            qcd_data = json.loads(qcd_str)
+            qasm_code = qcd_data["circuit"]
+            divisions = qcd_data["metadata"]["circuit_divisions"]
+            strategy_id = qcd_data["metadata"]["strategy_id"]
 
-    n = len(np_vectors)
-    if n == 0:
-        # Leere Liste => trivialerweise "zusammenhängend" (oder false?).
-        # Hier: wir nehmen an, leer => True
-        output_data = {"result": True}
+            strategy = EncodingRegistry.get_strategy(strategy_id)
+            decoded = strategy.decode(
+                qasm_code, divisions, {"probability_tolerance": prob_tol}
+            )
+            np_vectors = [np.array(vec, dtype=complex) for vec in decoded]
+        else:
+            raise ValueError("No valid input found. Provide 'vectors' or 'circuit'.")
+
+        n = len(np_vectors)
+        if n == 0:
+            # If no vectors, we consider it trivially "connected"
+            output_data = {"result": True}
+            return _store_and_return_result(db_id, output_data)
+
+        # Build adjacency
+        adjacency = [[] for _ in range(n)]
+        for i in range(n):
+            for j in range(i + 1, n):
+                if are_vectors_orthogonal(np_vectors[i], np_vectors[j], tolerance):
+                    adjacency[i].append(j)
+                    adjacency[j].append(i)
+
+        # BFS for connectivity
+        visited = set()
+        visited.add(0)
+        queue = deque([0])
+        while queue:
+            curr = queue.popleft()
+            for neighbor in adjacency[curr]:
+                if neighbor not in visited:
+                    visited.add(neighbor)
+                    queue.append(neighbor)
+
+        all_connected = len(visited) == n
+        output_data = {"result": bool(all_connected)}
+
         return _store_and_return_result(db_id, output_data)
 
-    # Erstelle Adjazenzliste: Kante, wenn orthogonal
-    adjacency = [[] for _ in range(n)]
-    for i in range(n):
-        for j in range(i + 1, n):
-            if are_vectors_orthogonal(np_vectors[i], np_vectors[j], tolerance):
-                adjacency[i].append(j)
-                adjacency[j].append(i)
-
-    # Prüfe per BFS oder DFS, ob der Graph zusammenhängend ist
-    visited = set()
-    queue = deque([0])
-    visited.add(0)
-
-    while queue:
-        current = queue.popleft()
-        for neighbor in adjacency[current]:
-            if neighbor not in visited:
-                visited.add(neighbor)
-                queue.append(neighbor)
-
-    all_connected = len(visited) == n
-
-    output_data = {"result": bool(all_connected)}
-    return _store_and_return_result(db_id, output_data)
+    except Exception as e:
+        TASK_LOGGER.error(f"Error in orthogonal_partitioning_resistant_task: {e}")
+        raise
 
 
 def _store_and_return_result(db_id: int, output_data: dict) -> str:
-    """Hilfsfunktion, um das Ergebnis als TXT/JSON zu speichern und zurückzugeben."""
-    with SpooledTemporaryFile(mode="w") as txt_file:
-        txt_file.write(str(output_data))
-        txt_file.seek(0)
-        STORE.persist_task_result(
-            db_id,
-            txt_file,
-            "out.txt",
-            "custom/orthogonal-partitioning-output",
-            "text/plain",
-        )
+    """
+    Saves the JSON string.
+    """
 
     with SpooledTemporaryFile(mode="w") as json_file:
         json.dump(output_data, json_file)

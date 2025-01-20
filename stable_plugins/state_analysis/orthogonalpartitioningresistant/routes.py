@@ -3,9 +3,8 @@ from json import dumps
 from typing import Mapping
 
 from celery.canvas import chain
-from flask import Response, abort, redirect, request
+from flask import Response, abort, redirect, render_template, request
 from flask.helpers import url_for
-from flask.templating import render_template
 from flask.views import MethodView
 from marshmallow import EXCLUDE
 from qhana_plugin_runner.api.plugin_schemas import (
@@ -28,11 +27,10 @@ from .tasks import orthogonal_partitioning_resistant_task
 
 @ORTHOGONAL_PARTITIONING_RESISTANT_BLP.route("/")
 class PluginsView(MethodView):
-    """Plugin collection resource for orthogonal partitioning resistant."""
+    """Returns plugin metadata for orthogonal partitioning resistant."""
 
     @ORTHOGONAL_PARTITIONING_RESISTANT_BLP.response(HTTPStatus.OK, PluginMetadataSchema())
     def get(self):
-        """Return the plugin metadata."""
         plugin = ClassicalStateAnalysisOrthogonalPartitioningResistant.instance
         if plugin is None:
             abort(HTTPStatus.INTERNAL_SERVER_ERROR)
@@ -70,7 +68,10 @@ class PluginsView(MethodView):
 
 @ORTHOGONAL_PARTITIONING_RESISTANT_BLP.route("/ui/")
 class MicroFrontend(MethodView):
-    """Micro frontend for orthogonal-partitioning-resistant plugin."""
+    """
+    UI for checking if the entire set of vectors is in one connected component (via orthonormal edges).
+    Now also supporting circuit input.
+    """
 
     example_vectors = [
         [[1.0, 0.0], [0.0, 0.0]],
@@ -83,8 +84,7 @@ class MicroFrontend(MethodView):
     }
 
     @ORTHOGONAL_PARTITIONING_RESISTANT_BLP.html_response(
-        HTTPStatus.OK,
-        description="Micro frontend of the orthogonal-partitioning-resistant plugin.",
+        HTTPStatus.OK, description="Orthogonal partitioning plugin UI (GET)."
     )
     @ORTHOGONAL_PARTITIONING_RESISTANT_BLP.arguments(
         OrthogonalPartitioningResistantParametersSchema(
@@ -94,12 +94,10 @@ class MicroFrontend(MethodView):
         required=False,
     )
     def get(self, errors):
-        """Return the micro frontend (GET)."""
         return self.render(request.args, errors, valid=False)
 
     @ORTHOGONAL_PARTITIONING_RESISTANT_BLP.html_response(
-        HTTPStatus.OK,
-        description="Micro frontend of the orthogonal-partitioning-resistant plugin.",
+        HTTPStatus.OK, description="Orthogonal partitioning plugin UI (POST)."
     )
     @ORTHOGONAL_PARTITIONING_RESISTANT_BLP.arguments(
         OrthogonalPartitioningResistantParametersSchema(
@@ -109,7 +107,6 @@ class MicroFrontend(MethodView):
         required=False,
     )
     def post(self, errors):
-        """Return the micro frontend (POST)."""
         return self.render(request.form, errors, valid=(not errors))
 
     def render(self, data: Mapping, errors: dict, valid: bool):
@@ -138,7 +135,7 @@ class MicroFrontend(MethodView):
                 process=url_for(
                     f"{ORTHOGONAL_PARTITIONING_RESISTANT_BLP.name}.ProcessView"
                 ),
-                help_text="Check if all vectors are in one connected component via orthogonality edges (True or False).",
+                help_text="Check if all vectors form one connected component. Now also supports .qcd circuit input.",
                 example_values=url_for(
                     f"{ORTHOGONAL_PARTITIONING_RESISTANT_BLP.name}.MicroFrontend",
                     **self.example_inputs,
@@ -149,7 +146,9 @@ class MicroFrontend(MethodView):
 
 @ORTHOGONAL_PARTITIONING_RESISTANT_BLP.route("/process/")
 class ProcessView(MethodView):
-    """Start a long running processing task."""
+    """
+    Starts the orthogonal-partitioning-resistant task.
+    """
 
     @ORTHOGONAL_PARTITIONING_RESISTANT_BLP.arguments(
         OrthogonalPartitioningResistantParametersSchema(unknown=EXCLUDE),
@@ -157,7 +156,6 @@ class ProcessView(MethodView):
     )
     @ORTHOGONAL_PARTITIONING_RESISTANT_BLP.response(HTTPStatus.SEE_OTHER)
     def post(self, arguments):
-        """Start the orthogonal partitioning resistant task."""
         db_task = ProcessingTask(
             task_name=orthogonal_partitioning_resistant_task.name,
             parameters=dumps(arguments),

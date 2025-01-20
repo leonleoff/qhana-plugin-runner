@@ -11,12 +11,14 @@ _identifier = plugin_identifier(_plugin_name, __version__)
 ORTHOGONAL_PARTITIONING_RESISTANT_BLP = SecurityBlueprint(
     _identifier,
     __name__,
-    description="Orthogonal Partitioning Resistant plugin API.",
+    description="Checks if all vectors form one connected component via orthogonality edges.",
     template_folder="templates",
 )
 
 
 class ClassicalStateAnalysisOrthogonalPartitioningResistant(QHAnaPluginBase):
+    """QHAna plugin to see if a set of vectors is all connected by orthogonality edges."""
+
     name = _plugin_name
     version = __version__
     description = "Checks if all given vectors form a single connected component (via orthogonality edges)."
