@@ -1,3 +1,4 @@
+from enum import Enum
 from typing import Dict, List, Type
 
 from .encoding_strategy import EncodingStrategy
@@ -40,3 +41,7 @@ class EncodingRegistry:
 
 # Register predefined strategies
 EncodingRegistry.register_strategy(SplitComplexBinaryEncoding)
+
+
+class VectorEncodingEnum(Enum):
+    split_complex_binary_encoding = "split_complex_binary_encoding"
