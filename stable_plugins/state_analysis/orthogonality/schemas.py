@@ -32,12 +32,15 @@ class ClassicalStateAnalysisOrthogonalityParametersSchema(FrontendFormBaseSchema
     circuit = NullAbleFileUrl(
         required=False,
         allow_none=True,
-        data_input_type="executable/circuit",
-        data_content_types="text/x-qasm",
+        data_input_type="application/x-qcd",
+        data_content_types="application/json",
         metadata={
-            "label": "OpenQASM Circuit",
+            "label": "Quantum Circuit Descriptor",
             "description": (
-                "URL to a quantum circuit in OpenQASM format. The file itself is JSON in text/x-qasm with fields {qasm_code, circuit_borders}."
+                "URL to a quantum circuit descriptor (.qcd) in JSON format. "
+                "The file includes fields: "
+                "'circuit' (OpenQASM code), "
+                "'metadata' (with fields 'encoding_strategy' and 'circuit_divisions')."
             ),
             "input_type": "text",
         },

@@ -109,12 +109,6 @@ def orthogonality_task(self, db_id: int) -> str:
     prob_tol = parameters.get("probability_tolerance") or 1e-5
     inner_tol = parameters.get("innerproduct_tolerance") or 1e-10
 
-    # final: we want exactly 2 vectors to test orthogonality
-    # approach:
-    # 1) if vectors exist -> do the old way
-    # 2) else if circuit exist -> decode from circuit
-    # 3) call are_vectors_orthogonal
-
     try:
         if vectors is not None:
             # "vectors" is set of two complex vectors
@@ -135,16 +129,27 @@ def orthogonality_task(self, db_id: int) -> str:
             with open_url(circuit) as circuit_response:
                 content = circuit_response.text
 
-            # Parse the JSON content
-            circuit_json = json.loads(content)
-            qasm_code = circuit_json["qasm_code"]
-            circuit_borders = circuit_json["circuitBorders"]
+            # Parse the QuantumCircuitDescriptor (.qcd) content
+            qcd_data = json.loads(content)
+            qasm_code = qcd_data["circuit"]
+            metadata = qcd_data["metadata"]
 
-            # Decode the vectors
+            # Extract relevant metadata
+            encoding_strategy = metadata["encoding_strategy"]
+            circuit_divisions = metadata["circuit_divisions"]
+
+            # Ensure the encoding strategy is supported (hardcoded for now)
+            if encoding_strategy != "split_complex_binary_encoding":
+                raise ValueError(
+                    f"Unsupported encoding strategy: {encoding_strategy}. Expected 'split_complex_binary_encoding'."
+                )
+
+            # Decode the vectors using the provided QASM and circuit divisions
             decoded_vectors = decode_binary_to_vectors_from_qasm(
-                qasm_code, circuit_borders, probability_tolerance=prob_tol
+                qasm_code, circuit_divisions, probability_tolerance=prob_tol
             )
 
+            # Validate the decoded vectors
             if len(decoded_vectors) != 2:
                 raise ValueError(
                     "Circuit must decode exactly two vectors for orthogonality check!"

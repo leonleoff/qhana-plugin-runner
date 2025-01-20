@@ -109,34 +109,25 @@ def vector_encoding_task(self, db_id: int) -> str:
     # Rufe encoding auf
     qasm_code, circuit_borders, qbits = binary_encoding(python_vectors)
 
-    # Speichere output als JSON
-    output = {
-        "circuitBorders": circuit_borders,
-        "qasm_code": qasm_code,
+    # Erstelle die QuantumCircuitDescriptor-Struktur
+    qcd_output = {
+        "circuit": qasm_code,
+        "metadata": {
+            "encoding_strategy": "split_complex_binary_encoding",
+            "circuit_divisions": circuit_borders,
+        },
     }
 
-    # Speichere QASM als "encoded_circuit.qasm"
-    with SpooledTemporaryFile(mode="w") as qasm_file:
-        json.dump(output, qasm_file)  # Statt str(output)
-        qasm_file.seek(0)
+    # Speichere als QuantumCircuitDescriptor-Datei (.qcd)
+    with SpooledTemporaryFile(mode="w") as qcd_file:
+        json.dump(qcd_output, qcd_file, indent=4)  # Formatiert für bessere Lesbarkeit
+        qcd_file.seek(0)
         STORE.persist_task_result(
             db_id,
-            qasm_file,
-            "encoded_circuit.qasm",
-            "executable/circuit",
-            "text/x-qasm",
-        )
-
-    # Speichere circuit_borders als separates JSON (dieser Teil war korrekt)
-    with SpooledTemporaryFile(mode="w") as borders_file:
-        json.dump(output, borders_file)
-        borders_file.seek(0)
-        STORE.persist_task_result(
-            db_id,
-            borders_file,
-            "circuit_borders.json",
-            "application/json",
-            "application/json",
+            qcd_file,
+            "quantum_circuit_descriptor.qcd",  # Dateiname mit passender Endung
+            "application/x-qcd",  # Eigener MIME-Typ
+            "application/json",  # Unterliegende Datenstruktur ist JSON
         )
 
     TASK_LOGGER.info("Vector encoding completed successfully.")
