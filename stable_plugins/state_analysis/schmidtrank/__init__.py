@@ -23,9 +23,9 @@ __version__ = "v0.0.1"
 _identifier = plugin_identifier(_plugin_name, __version__)
 
 CLASSICAL_ANALYSIS_SCHMIDTRANK_BLP = SecurityBlueprint(
-    _identifier,  # blueprint name
-    __name__,  # module import name!
-    description="Classical state analysis plugin API.",
+    _identifier,
+    __name__,
+    description="Analyzes the Schmidt rank of a single bipartite vector.",
     template_folder="classical_state_templates",
 )
 
@@ -33,7 +33,7 @@ CLASSICAL_ANALYSIS_SCHMIDTRANK_BLP = SecurityBlueprint(
 class ClassicalStateAnalysisSchmidtrank(QHAnaPluginBase):
     name = _plugin_name
     version = __version__
-    description = "Analyzes the Schmidt rank of the given classical state vectors."
+    description = "Computes the Schmidt rank of a single bipartite state vector."
     tags = ["classical-state-analysis", "schmidtrank"]
 
     def __init__(self, app: Optional[Flask]) -> None:
@@ -44,10 +44,6 @@ class ClassicalStateAnalysisSchmidtrank(QHAnaPluginBase):
 
 
 try:
-    # It is important to import the routes **after** COSTUME_LOADER_BLP and CostumeLoader are defined, because they are
-    # accessed as soon as the routes are imported.
     from . import routes
 except ImportError:
-    # When running `poetry run flask install`, importing the routes will fail, because the dependencies are not
-    # installed yet.
     pass
