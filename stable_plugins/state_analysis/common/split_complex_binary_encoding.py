@@ -95,7 +95,7 @@ class SplitComplexBinaryEncoding(EncodingStrategy):
 
         return qasm_code, circuit_divisions
 
-    def decode(self, qasm_code: str, circuit_divisions):
+    def decode(self, qasm_code: str, circuit_divisions, options: dict = None):
         """
         Decodes the original vectors from the QASM code + metadata by simulating the circuit statevector.
 

@@ -52,7 +52,7 @@ def vector_encoding_task(self, db_id: int) -> str:
     strategy_id = "split_complex_binary_encoding"
     strategy = EncodingRegistry.get_strategy(strategy_id)
 
-    qasm_code, circuit_borders = strategy.decode(python_vectors)
+    qasm_code, circuit_borders = strategy.encode(python_vectors, None)
 
     # Erstelle die QuantumCircuitDescriptor-Struktur
     qcd_output = {
