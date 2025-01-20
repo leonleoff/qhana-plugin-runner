@@ -43,6 +43,11 @@ class VectorsToQasmParametersSchema(FrontendFormBaseSchema):
         """
         Hook to post-process the data after validation.
 
-        Returns the validated data in a consistent format for further processing.
+        Converts the `attribute_filter_strategy` Enum into its string value to ensure
+        JSON-serializability and formats the data consistently for further processing.
         """
-        return data
+        vectors = data.get("vectors")
+        strategy_id = str(
+            data.get("attribute_filter_strategy").value
+        )  # Extract the string value
+        return {"vectors": vectors, "strategy_id": strategy_id}
