@@ -1,10 +1,16 @@
 import struct
 
 import numpy as np
-from qiskit import QuantumCircuit
-from qiskit.quantum_info import Statevector
 
 from .encoding_strategy import EncodingStrategy
+
+# qiskit imports (make sure qiskit is installed!)
+try:
+    from qiskit import QuantumCircuit
+    from qiskit.quantum_info import Statevector
+except ImportError as e:
+    # If needed, raise or log an error
+    pass
 
 
 class SplitComplexBinaryEncoding(EncodingStrategy):
@@ -17,14 +23,28 @@ class SplitComplexBinaryEncoding(EncodingStrategy):
     def id(self) -> str:
         return "split_complex_binary_encoding"
 
-    def encode(self, vectors: list):
+    def encode(self, vectors: list, options: dict = None):
         """
         Encodes a list of complex vectors into QASM code + metadata.
 
+        Args:
+            vectors (list): List of vectors to encode. Each vector is a list of complex numbers.
+            options (dict, optional): Additional options for encoding. Defaults to None.
+
         Returns:
-            qasm_code (str),
-            circuit_divisions (list)
+            tuple: qasm_code (str), circuit_divisions (list)
         """
+        # Type check for vectors
+        if not isinstance(vectors, list):
+            raise TypeError("The 'vectors' argument must be a list of vectors.")
+        if not all(isinstance(vec, list) for vec in vectors):
+            raise TypeError("Each element in 'vectors' must be a list.")
+        if not all(all(isinstance(c, complex) for c in vec) for vec in vectors):
+            raise TypeError("Each element in a vector must be a complex number.")
+
+        # Handle options
+        if options is None:
+            options = {}
 
         def float_to_bits_list(value: float) -> list:
             """Converts a float into a list of bits using IEEE 754 standard (single precision)."""
@@ -32,7 +52,7 @@ class SplitComplexBinaryEncoding(EncodingStrategy):
             bits = []
             for byte in packed:
                 bits.extend([int(bit) for bit in f"{byte:08b}"])
-            # optional: remove trailing zeros
+            # Optional: remove trailing zeros
             while bits and bits[-1] == 0:
                 bits.pop()
             return bits if bits else [0]
