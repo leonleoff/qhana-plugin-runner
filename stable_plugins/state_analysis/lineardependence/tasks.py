@@ -6,8 +6,10 @@ from typing import Optional
 import numpy as np
 from celery.utils.log import get_task_logger
 from common.algorithms import are_vectors_linearly_dependent
+from common.encoding_registry import EncodingRegistry
 from qhana_plugin_runner.celery import CELERY
 from qhana_plugin_runner.db.models.tasks import ProcessingTask
+from qhana_plugin_runner.requests import open_url
 from qhana_plugin_runner.storage import STORE
 
 from . import ClassicalStateAnalysisLineardependence
@@ -20,88 +22,81 @@ TASK_LOGGER = get_task_logger(__name__)
     bind=True,
 )
 def lineardependence_task(self, db_id: int) -> str:
+    """
+    Either takes multiple vectors or decodes them from a circuit descriptor,
+    then checks for linear dependence.
+    """
 
-    TASK_LOGGER.info(f"Starting 'lineardependence' task with database ID '{db_id}'.")
+    TASK_LOGGER.info(f"Starting 'lineardependence' task with DB ID='{db_id}'.")
 
-    # Load task data
     task_data = ProcessingTask.get_by_id(id_=db_id)
     if not task_data:
-        msg = f"Task data with ID {db_id} could not be loaded!"
+        msg = f"No task data found for ID {db_id}."
         TASK_LOGGER.error(msg)
         raise KeyError(msg)
 
-    # Extract parameters and log them
-    parameters = loads(task_data.parameters or "{}")
-    TASK_LOGGER.info(f"Extracted parameters: {parameters}")
+    params = loads(task_data.parameters or "{}")
+    TASK_LOGGER.info(f"Parameters: {params}")
 
-    vectors = parameters.get("vectors", [])
-    tolerance = parameters.get("tolerance")
-    TASK_LOGGER.info(
-        f"Input parameters before transformation: vectors={vectors}, tolerance={tolerance}"
-    )
-
-    # Transform input vectors into NumPy arrays of complex numbers
-    new_set_of_vectors = []
-    try:
-        for vector in vectors:
-            complex_numbers = []
-            for pair in vector:
-                complex_number = complex(pair[0], pair[1])
-                complex_numbers.append(complex_number)
-            np_vector = np.array(complex_numbers)
-            new_set_of_vectors.append(np_vector)
-
-        TASK_LOGGER.info(f"Transformed vectors: {new_set_of_vectors}")
-
-    except Exception as e:
-        TASK_LOGGER.error(f"Error while transforming input vectors: {e}")
-        raise
+    vectors = params.get("vectors")
+    tolerance = params.get("tolerance") or 1e-10
+    circuit_url = params.get("circuit")
+    prob_tol = params.get("probability_tolerance") or 1e-5
 
     try:
-        # Log and call the function to check linear dependence
-        TASK_LOGGER.info(
-            "Invoking 'are_vectors_linearly_dependent' with parameters: "
-            f"vectors={new_set_of_vectors}, tolerance={tolerance}"
-        )
+        if vectors is not None:
+            # CASE A: direct vectors
+            np_vectors = []
+            for v in vectors:
+                arr = np.array([complex(re, im) for (re, im) in v])
+                np_vectors.append(arr)
 
-        result = are_vectors_linearly_dependent(
-            vectors=new_set_of_vectors, tolerance=tolerance
-        )
+        elif circuit_url is not None:
+            # CASE B: decode from QCD
+            with open_url(circuit_url) as resp:
+                qcd_content = resp.text
 
-        # JSON Output
-        output_data = {
-            "result": bool(result),  # Explizit in JSON-kompatiblen Typ umwandeln
-        }
+            qcd_data = json.loads(qcd_content)
+            qasm_code = qcd_data["circuit"]
+            divisions = qcd_data["metadata"]["circuit_divisions"]
+            strategy_id = qcd_data["metadata"]["strategy_id"]
 
-        # Save the result as a TXT file
-        with SpooledTemporaryFile(mode="w") as txt_file:
-            txt_file.write(str(output_data))  # output_data als String speichern
-            txt_file.seek(0)  # Reset the file pointer for reading
-            STORE.persist_task_result(
-                db_id,
-                txt_file,
-                "out.txt",  # File name
-                "custom/lineardependence-output",  # Data type
-                "text/plain",  # MIME type
+            strategy = EncodingRegistry.get_strategy(strategy_id)
+            decoded = strategy.decode(
+                qasm_code, divisions, options={"probability_tolerance": prob_tol}
             )
 
-        # Save the result as a JSON file
+            # decoded is a list of vectors
+            np_vectors = []
+            for vector in decoded:
+                arr = np.array(vector, dtype=complex)
+                np_vectors.append(arr)
+        else:
+            raise ValueError("No valid input provided.")
+
+        # Now call are_vectors_linearly_dependent
+        result = are_vectors_linearly_dependent(np_vectors, tolerance=tolerance)
+
+        output_data = {
+            "result": bool(result),
+            "inputType": "vectors" if vectors else "circuit",
+        }
+
+        # Save results
         with SpooledTemporaryFile(mode="w") as json_file:
-            json.dump(output_data, json_file)  # Schreibe das JSON in die Datei
-            json_file.seek(0)  # Reset the file pointer for reading
+            json.dump(output_data, json_file)
+            json_file.seek(0)
             STORE.persist_task_result(
                 db_id,
                 json_file,
-                "out.json",  # File name
-                "custom/lineardependence-output",  # Data type
-                "application/json",  # MIME type
+                "out.json",
+                "custom/lineardependence-output",
+                "application/json",
             )
 
-        TASK_LOGGER.info(f"Results successfully saved for task ID {db_id}.")
-
-        # Return JSON data
-        return json.dumps(output_data)  # Rückgabe des JSON-Strings
+        TASK_LOGGER.info(f"Lineardependence result: {output_data}")
+        return json.dumps(output_data)
 
     except Exception as e:
-        TASK_LOGGER.error(f"Error during 'lineardependence' task execution: {e}")
+        TASK_LOGGER.error(f"Error in 'lineardependence' task: {e}")
         raise
