@@ -5,7 +5,7 @@ from tempfile import SpooledTemporaryFile
 from typing import Optional
 
 from celery.utils.log import get_task_logger
-from encoding_strategies.encoding_registry import EncodingRegistry
+from common.encoding_registry import EncodingRegistry
 from qhana_plugin_runner.celery import CELERY
 from qhana_plugin_runner.db.models.tasks import ProcessingTask
 from qhana_plugin_runner.storage import STORE
