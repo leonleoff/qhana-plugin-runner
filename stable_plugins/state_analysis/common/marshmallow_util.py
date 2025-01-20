@@ -55,6 +55,11 @@ class COMPLEXVECTOR(ma.fields.Field):
     """Field for deserializing a vector of complex numbers."""
 
     def _deserialize(self, value, attr, data, **kwargs):
+
+        # when empty
+        if value in (None, ""):
+            return ""
+
         # Check if the value is a string and try to parse it into a list or tuple
         if isinstance(value, str):
             try:

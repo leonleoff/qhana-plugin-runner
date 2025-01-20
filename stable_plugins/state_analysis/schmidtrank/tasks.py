@@ -17,6 +17,21 @@ from . import ClassicalStateAnalysisSchmidtrank
 TASK_LOGGER = get_task_logger(__name__)
 
 
+def validate_decoded(decoded):
+
+    if not isinstance(decoded, list):
+        raise ValueError("Decoded data must be a list.")
+
+    if all(isinstance(element, complex) for element in decoded):
+        return True
+    elif all(isinstance(element, list) for element in decoded):
+        raise ValueError("Decoded data cannot be a list of lists.")
+    else:
+        raise ValueError(
+            "Decoded data must be either a list of complex numbers or a list of lists."
+        )
+
+
 @CELERY.task(
     name=f"{ClassicalStateAnalysisSchmidtrank.instance.identifier}.schmidtrank_task",
     bind=True,
@@ -52,7 +67,7 @@ def schmidtrank_task(self, db_id: int) -> str:
             cnums = [complex(r, i) for (r, i) in vector_data]
             np_vector = np.array(cnums, dtype=complex)
 
-            result_bool = compute_schmidt_rank(np_vector, dimA, dimB, tolerance)
+            result_int = compute_schmidt_rank(np_vector, dimA, dimB, tolerance)
 
         elif circuit_url is not None:
             # CASE B: decode from circuit
@@ -67,18 +82,21 @@ def schmidtrank_task(self, db_id: int) -> str:
             decoded = strategy.decode(
                 qasm_code, divisions, options={"probability_tolerance": prob_tol}
             )
+            TASK_LOGGER.info(f"decoded: {decoded}")
+
+            validate_decoded(decoded)
 
             if not decoded:
                 raise ValueError("Decoded no vectors from the circuit descriptor.")
 
-            result_bool = compute_schmidt_rank(
+            result_int = compute_schmidt_rank(
                 np.array(decoded, dtype=complex), dimA, dimB, tolerance
             )
 
         else:
             raise ValueError("No valid input provided for Schmidt rank plugin.")
 
-        output_data = {"result": bool(result_bool)}
+        output_data = {"result": int(result_int)}
 
         # Save
         with SpooledTemporaryFile(mode="w") as json_file:
