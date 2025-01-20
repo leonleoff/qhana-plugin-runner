@@ -6,84 +6,16 @@ from typing import Optional
 
 import numpy as np
 from celery.utils.log import get_task_logger
+from common.algorithms import are_vectors_orthogonal
+from encoding_strategies.encoding_registry import EncodingRegistry
 from qhana_plugin_runner.celery import CELERY
 from qhana_plugin_runner.db.models.tasks import ProcessingTask
 from qhana_plugin_runner.requests import get_mimetype, open_url
 from qhana_plugin_runner.storage import STORE
 
-# qiskit imports (make sure qiskit is installed!)
-try:
-    from qiskit import QuantumCircuit
-    from qiskit.quantum_info import Statevector
-except ImportError as e:
-    # If needed, raise or log an error
-    pass
-
-from common.algorithms import are_vectors_orthogonal
-
 from . import ClassicalStateAnalysisOrthogonality
 
 TASK_LOGGER = get_task_logger(__name__)
-
-
-def decode_binary_to_vectors_from_qasm(
-    qasm_code: str, circuit_borders: list, probability_tolerance: float
-):
-    """
-    Decodes the original vectors from the QASM code + metadata by simulating the circuit statevector.
-
-    Returns: list of vectors, each is a list[complex].
-    """
-
-    def bits_to_float(bits):
-        # 32-bit => pad with zeros
-        while len(bits) < 32:
-            bits.append(0)
-        byte_array = bytes(
-            int("".join(map(str, bits[i : i + 8])), 2) for i in range(0, 32, 8)
-        )
-        return struct.unpack(">f", byte_array)[0]
-
-    # Build circuit
-    qc = QuantumCircuit.from_qasm_str(qasm_code)
-    st = Statevector.from_instruction(qc)
-    probabilities = st.probabilities_dict()
-
-    # We have e.g. 7 qubits => each state is "xxx..." string => '1010110'
-    # We pick the "dominant" state (or combine?)
-    # For a simple approach: if a state has probability > probability_tolerance => set the bits
-    # We'll just do an OR approach.
-    num_qubits = qc.num_qubits
-    qbits = [0] * num_qubits
-
-    for state, prob in probabilities.items():
-        if prob > probability_tolerance:
-            # state is e.g. '0101' => reversed indexing
-            # in Qiskit, state[0] is the least significant bit, I think.
-            # We might need to confirm.
-            # We'll do: reversed(state) => [ i in range(num_qubits) ]
-            for i, bit in enumerate(reversed(state)):
-                if bit == "1":
-                    qbits[i] = 1
-
-    # decode now
-    vectors = []
-    for vector_borders in circuit_borders:
-        # each vector is a list of "number_borders" (real, imag)
-        vector = []
-        for number_borders in vector_borders:
-            real_lower, real_upper = number_borders[0]  # [lower, upper]
-            real_bits = qbits[real_lower:real_upper]
-            real_part = bits_to_float(real_bits)
-
-            imag_lower, imag_upper = number_borders[1]
-            imag_bits = qbits[imag_lower:imag_upper]
-            imag_part = bits_to_float(imag_bits)
-
-            vector.append(complex(real_part, imag_part))
-        vectors.append(vector)
-
-    return vectors
 
 
 @CELERY.task(
@@ -135,18 +67,24 @@ def orthogonality_task(self, db_id: int) -> str:
             metadata = qcd_data["metadata"]
 
             # Extract relevant metadata
-            encoding_strategy = metadata["encoding_strategy"]
+            strategy_id = metadata["strategy_id"]
             circuit_divisions = metadata["circuit_divisions"]
-
+            # TODO: Let choose
             # Ensure the encoding strategy is supported (hardcoded for now)
-            if encoding_strategy != "split_complex_binary_encoding":
+            if strategy_id != "split_complex_binary_encoding":
                 raise ValueError(
-                    f"Unsupported encoding strategy: {encoding_strategy}. Expected 'split_complex_binary_encoding'."
+                    f"Unsupported encoding strategy: {strategy_id}. Expected 'split_complex_binary_encoding'."
                 )
 
             # Decode the vectors using the provided QASM and circuit divisions
-            decoded_vectors = decode_binary_to_vectors_from_qasm(
-                qasm_code, circuit_divisions, probability_tolerance=prob_tol
+            strategy = EncodingRegistry.get_strategy(strategy_id)
+
+            # Prepare the options dictionary
+            options = {"probability_tolerance": prob_tol}
+
+            # Pass the options dictionary to the decode method
+            decoded_vectors = strategy.decode(
+                qasm_code, circuit_divisions, options=options
             )
 
             # Validate the decoded vectors

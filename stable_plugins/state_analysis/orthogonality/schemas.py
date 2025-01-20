@@ -40,7 +40,7 @@ class ClassicalStateAnalysisOrthogonalityParametersSchema(FrontendFormBaseSchema
                 "URL to a quantum circuit descriptor (.qcd) in JSON format. "
                 "The file includes fields: "
                 "'circuit' (OpenQASM code), "
-                "'metadata' (with fields 'encoding_strategy' and 'circuit_divisions')."
+                "'metadata' (with fields 'strategy_id' and 'circuit_divisions')."
             ),
             "input_type": "text",
         },
