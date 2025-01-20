@@ -1,6 +1,8 @@
+# routes.py
+
 from http import HTTPStatus
 from json import dumps
-from typing import Mapping, Optional
+from typing import Mapping
 
 from celery.canvas import chain
 from flask import Response, abort, redirect, render_template, request
@@ -15,7 +17,6 @@ from qhana_plugin_runner.api.plugin_schemas import (
     PluginMetadataSchema,
     PluginType,
 )
-from qhana_plugin_runner.api.util import SecurityBlueprint
 from qhana_plugin_runner.db.models.tasks import ProcessingTask
 from qhana_plugin_runner.tasks import save_task_error, save_task_result
 
@@ -26,11 +27,12 @@ from .tasks import vector_encoding_task
 
 @ENCODING_BLP.route("/")
 class PluginView(MethodView):
-    """Plugins collection resource for the vector encoding plugin."""
+    """
+    Returns plugin metadata for vector encoding.
+    """
 
     @ENCODING_BLP.response(HTTPStatus.OK, PluginMetadataSchema())
     def get(self):
-        """Return the plugin metadata."""
         plugin = VectorEncodingPlugin.instance
         if plugin is None:
             abort(HTTPStatus.INTERNAL_SERVER_ERROR)
@@ -73,18 +75,21 @@ class PluginView(MethodView):
 
 @ENCODING_BLP.route("/ui/")
 class MicroFrontend(MethodView):
-    """Simple micro-frontend for the vector encoding plugin."""
+    """
+    A basic UI for encoding a set of complex vectors into QASM.
+    """
 
     example_vectors = [
         [[1.0, 0.0], [0.0, 0.0]],
         [[0.0, 0.0], [0.0, 1.0]],
     ]
-
     example_inputs = {
         "vectors": f"{example_vectors}",
     }
 
-    @ENCODING_BLP.html_response(HTTPStatus.OK, description="Micro frontend (GET).")
+    @ENCODING_BLP.html_response(
+        HTTPStatus.OK, description="Vector Encoding plugin UI (GET)."
+    )
     @ENCODING_BLP.arguments(
         VectorsToQasmParametersSchema(
             partial=True, unknown=EXCLUDE, validate_errors_as_result=True
@@ -95,7 +100,9 @@ class MicroFrontend(MethodView):
     def get(self, errors):
         return self.render(request.args, errors, valid=False)
 
-    @ENCODING_BLP.html_response(HTTPStatus.OK, description="Micro frontend (POST).")
+    @ENCODING_BLP.html_response(
+        HTTPStatus.OK, description="Vector Encoding plugin UI (POST)."
+    )
     @ENCODING_BLP.arguments(
         VectorsToQasmParametersSchema(
             partial=True, unknown=EXCLUDE, validate_errors_as_result=True
@@ -122,10 +129,9 @@ class MicroFrontend(MethodView):
                 values=data,
                 errors=errors,
                 process=url_for(f"{ENCODING_BLP.name}.ProcessView"),
-                help_text="Provide two vectors and a tolerance to check their lineardependence.",
+                help_text="Provide a list of complex vectors and select an encoding strategy. Output is a .qcd file.",
                 example_values=url_for(
-                    f"{ENCODING_BLP.name}.MicroFrontend",
-                    **self.example_inputs,
+                    f"{ENCODING_BLP.name}.MicroFrontend", **self.example_inputs
                 ),
             )
         )
@@ -133,16 +139,15 @@ class MicroFrontend(MethodView):
 
 @ENCODING_BLP.route("/process/")
 class ProcessView(MethodView):
-    """Start a long running processing task."""
+    """
+    Starts the vector-encoding Celery task.
+    """
 
     @ENCODING_BLP.arguments(
-        VectorsToQasmParametersSchema(unknown=EXCLUDE),
-        location="form",
+        VectorsToQasmParametersSchema(unknown=EXCLUDE), location="form"
     )
     @ENCODING_BLP.response(HTTPStatus.SEE_OTHER)
-    @ENCODING_BLP.require_jwt("jwt", optional=True)
     def post(self, arguments):
-        """Start the vector-encoding task."""
         db_task = ProcessingTask(
             task_name=vector_encoding_task.name, parameters=dumps(arguments)
         )
@@ -157,7 +162,6 @@ class ProcessView(MethodView):
 
         db_task.save(commit=True)
 
-        # Redirect to the task view
         return redirect(
             url_for("tasks-api.TaskView", task_id=str(db_task.id)), HTTPStatus.SEE_OTHER
         )

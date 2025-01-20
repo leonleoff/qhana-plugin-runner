@@ -4,16 +4,17 @@ from qhana_plugin_runner.api.util import FrontendFormBaseSchema
 
 
 class ClassicalStateAnalysisOrthogonalityParametersSchema(FrontendFormBaseSchema):
-    """Schema for classical state analysis parameters, focusing on orthogonality analysis."""
+    """
+    Validates parameters for orthogonality checks:
+      - two vectors, or
+      - a circuit descriptor (.qcd) with the needed metadata.
+    """
 
     vectors = SETOFTWOCOMPLEXVECTORS(
         required=False,
         metadata={
             "label": "Input Vectors",
-            "description": (
-                "A set of two complex vectors to analyze. "
-                "Example: [[[1.0, 0.0], [1.0, 0.0], [1.0, 0.0]], [[1.0, 0.0], [1.0, 0.0], [1.0, 0.0]]]"
-            ),
+            "description": "A pair of complex vectors for orthogonality analysis.",
             "input_type": "textarea",
         },
     )
@@ -23,7 +24,8 @@ class ClassicalStateAnalysisOrthogonalityParametersSchema(FrontendFormBaseSchema
         metadata={
             "label": "Inner Product Tolerance",
             "description": (
-                "Optional threshold for the inner product. If not provided, default `1e-10`."
+                "Threshold for the inner product used to determine orthogonality. "
+                "If omitted, defaults to 1e-10."
             ),
             "input_type": "text",
         },
@@ -35,12 +37,10 @@ class ClassicalStateAnalysisOrthogonalityParametersSchema(FrontendFormBaseSchema
         data_input_type="application/x-qcd",
         data_content_types="application/json",
         metadata={
-            "label": "Quantum Circuit Descriptor",
+            "label": "Quantum Circuit Descriptor (.qcd)",
             "description": (
-                "URL to a quantum circuit descriptor (.qcd) in JSON format. "
-                "The file includes fields: "
-                "'circuit' (OpenQASM code), "
-                "'metadata' (with fields 'strategy_id' and 'circuit_divisions')."
+                "A JSON-based circuit descriptor file containing fields like 'circuit' (QASM code) "
+                "and 'metadata' (with 'strategy_id' and 'circuit_divisions')."
             ),
             "input_type": "text",
         },
@@ -51,7 +51,8 @@ class ClassicalStateAnalysisOrthogonalityParametersSchema(FrontendFormBaseSchema
         metadata={
             "label": "Probability Tolerance",
             "description": (
-                "Min probability threshold when decoding the circuit. Default ~1e-5 or so."
+                "Minimum probability threshold for decoding the statevector from QASM. "
+                "If omitted, defaults to around 1e-5."
             ),
             "input_type": "text",
         },
@@ -59,34 +60,34 @@ class ClassicalStateAnalysisOrthogonalityParametersSchema(FrontendFormBaseSchema
 
     @ma.post_load
     def validate_data(self, data, **kwargs):
-        """Validate and preprocess the provided data."""
+        """
+        Ensures that either 'vectors' or 'circuit' is provided, not both.
+        Adjusts default tolerance values if none is provided.
+        """
 
-        # sanitize
         if data.get("innerproduct_tolerance") in ("", None):
             data["innerproduct_tolerance"] = None
         if data.get("probability_tolerance") in ("", None):
             data["probability_tolerance"] = None
 
-        # case A: vectors
+        # Option 1: vectors
         if data.get("vectors") not in ("", None):
             if data.get("circuit") not in ("", None):
-                raise Exception(
-                    "Either 'vectors' OR 'circuit' can be provided, not both!"
+                raise ValueError(
+                    "Either 'vectors' or 'circuit' can be provided, not both."
                 )
-            # circuit-Felder leer machen
             data["circuit"] = None
             data["probability_tolerance"] = None
             return data
 
-        # case B: circuit
+        # Option 2: circuit
         if data.get("circuit") not in ("", None):
             if data.get("vectors") not in ("", None):
-                raise Exception(
-                    "Either 'vectors' OR 'circuit' can be provided, not both!"
+                raise ValueError(
+                    "Either 'vectors' or 'circuit' can be provided, not both."
                 )
             data["vectors"] = None
             data["innerproduct_tolerance"] = None
             return data
 
-        # keins
-        raise Exception("Must provide either 'vectors' or 'circuit'!")
+        raise ValueError("Must provide either 'vectors' or 'circuit' input.")

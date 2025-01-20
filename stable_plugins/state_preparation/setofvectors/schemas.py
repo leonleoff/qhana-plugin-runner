@@ -7,47 +7,39 @@ from qhana_plugin_runner.api.util import FrontendFormBaseSchema
 
 class VectorsToQasmParametersSchema(FrontendFormBaseSchema):
     """
-    Schema for validating parameters for encoding vectors into QASM code.
+    Validates parameters to encode a set of complex vectors into QASM.
     """
 
-    # Field for input vectors
     vectors = SETOFCOMPLEXVECTORS(
         required=True,
         metadata={
-            "label": "Input Vectors",  # Label displayed on the frontend
+            "label": "Input Vectors",
             "description": (
-                "A set (list) of complex vectors. "
-                "Each vector is represented as a list of [re, im] pairs (real and imaginary parts). "
+                "A list of complex vectors, each element is [re, im]. "
                 "Example: [[[1.0, 0.0], [0.0, 1.0]]] "
             ),
-            "input_type": "textarea",  # Suggests a text area for input in the frontend
+            "input_type": "textarea",
         },
     )
 
-    # Field for selecting the encoding strategy
     attribute_filter_strategy = EnumField(
-        VectorEncodingEnum,  # Enum class that defines available encoding strategies
+        VectorEncodingEnum,
         required=True,
         metadata={
-            "label": "Attribute Filter Setting",  # Label displayed on the frontend
+            "label": "Encoding Strategy",
             "description": (
-                "Specify the encoding strategy to use for transforming the vectors into QASM. "
-                "Choose from the available strategies in the dropdown."
+                "Pick an encoding strategy from the available options (e.g., split_complex_binary_encoding)."
             ),
-            "input_type": "select",  # Suggests a dropdown menu for selection in the frontend
+            "input_type": "select",
         },
     )
 
     @ma.post_load
     def fix_data(self, data, **kwargs):
         """
-        Hook to post-process the data after validation.
-
-        Converts the `attribute_filter_strategy` Enum into its string value to ensure
-        JSON-serializability and formats the data consistently for further processing.
+        Convert the `attribute_filter_strategy` to a string value for JSON usage,
+        returning a dict with consistent keys: 'vectors' and 'strategy_id'.
         """
         vectors = data.get("vectors")
-        strategy_id = str(
-            data.get("attribute_filter_strategy").value
-        )  # Extract the string value
-        return {"vectors": vectors, "strategy_id": strategy_id}
+        strategy_str = str(data["attribute_filter_strategy"].value)
+        return {"vectors": vectors, "strategy_id": strategy_str}
