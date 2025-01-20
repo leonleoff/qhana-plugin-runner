@@ -23,9 +23,9 @@ __version__ = "v0.0.1"
 _identifier = plugin_identifier(_plugin_name, __version__)
 
 CLASSICAL_ANALYSIS_LINEARDEPENDENCEINHX_BLP = SecurityBlueprint(
-    _identifier,  # blueprint name
-    __name__,  # module import name!
-    description="Classical state analysis plugin API.",
+    _identifier,
+    __name__,
+    description="Analyzes whether multiple vectors in Hx (dimA x dimB) are linearly dependent.",
     template_folder="classical_state_templates",
 )
 
@@ -33,7 +33,9 @@ CLASSICAL_ANALYSIS_LINEARDEPENDENCEINHX_BLP = SecurityBlueprint(
 class ClassicalStateAnalysisLineardependenceInHX(QHAnaPluginBase):
     name = _plugin_name
     version = __version__
-    description = "Analyzes whether a state is speciallinear dependend or not."
+    description = (
+        "Checks linear dependence in a bipartite-like structure, given dimA, dimB."
+    )
     tags = ["classical-state-analysis", "lineardependenceInHX"]
 
     def __init__(self, app: Optional[Flask]) -> None:
@@ -44,10 +46,6 @@ class ClassicalStateAnalysisLineardependenceInHX(QHAnaPluginBase):
 
 
 try:
-    # It is important to import the routes **after** COSTUME_LOADER_BLP and CostumeLoader are defined, because they are
-    # accessed as soon as the routes are imported.
     from . import routes
 except ImportError:
-    # When running `poetry run flask install`, importing the routes will fail, because the dependencies are not
-    # installed yet.
     pass

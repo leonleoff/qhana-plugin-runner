@@ -1,13 +1,10 @@
 from http import HTTPStatus
 from json import dumps
-from typing import Mapping, Optional
+from typing import Mapping
 
 from celery.canvas import chain
-from celery.utils.log import get_task_logger
-from flask import Response, abort, redirect
-from flask.globals import current_app, request
+from flask import Response, abort, redirect, render_template, request
 from flask.helpers import url_for
-from flask.templating import render_template
 from flask.views import MethodView
 from marshmallow import EXCLUDE
 from qhana_plugin_runner.api.plugin_schemas import (
@@ -18,12 +15,7 @@ from qhana_plugin_runner.api.plugin_schemas import (
     PluginType,
 )
 from qhana_plugin_runner.db.models.tasks import ProcessingTask
-from qhana_plugin_runner.tasks import (
-    TASK_STEPS_CHANGED,
-    add_step,
-    save_task_error,
-    save_task_result,
-)
+from qhana_plugin_runner.tasks import save_task_error, save_task_result
 
 from . import (
     CLASSICAL_ANALYSIS_LINEARDEPENDENCEINHX_BLP,
@@ -35,17 +27,17 @@ from .tasks import lineardependenceInHX_task
 
 @CLASSICAL_ANALYSIS_LINEARDEPENDENCEINHX_BLP.route("/")
 class PluginsView(MethodView):
-    """Plugins collection resource."""
+    """Returns plugin metadata for lineardependenceInHX."""
 
     @CLASSICAL_ANALYSIS_LINEARDEPENDENCEINHX_BLP.response(
         HTTPStatus.OK, PluginMetadataSchema()
     )
     @CLASSICAL_ANALYSIS_LINEARDEPENDENCEINHX_BLP.require_jwt("jwt", optional=True)
     def get(self):
-        """Endpoint returning the plugin metadata."""
         plugin = ClassicalStateAnalysisLineardependenceInHX.instance
         if plugin is None:
             abort(HTTPStatus.INTERNAL_SERVER_ERROR)
+
         return PluginMetadata(
             title=plugin.name,
             description=plugin.description,
@@ -75,15 +67,17 @@ class PluginsView(MethodView):
                     )
                 ],
             ),
-            tags=ClassicalStateAnalysisLineardependenceInHX.instance.tags,
+            tags=plugin.tags,
         )
 
 
 @CLASSICAL_ANALYSIS_LINEARDEPENDENCEINHX_BLP.route("/ui/")
 class MicroFrontend(MethodView):
-    """Micro frontend for the classical lineardependenceInHX state analysis plugin."""
+    """
+    A basic UI for the lineardependenceInHX plugin, with vectors or circuit input.
+    """
 
-    vectors = [
+    example_vectors = [
         [
             [0.7071067811865475, 0.0],
             [0.0, 0.0],
@@ -98,16 +92,16 @@ class MicroFrontend(MethodView):
         ],
     ]
     example_inputs = {
-        "vectors": f"{vectors}",
+        "vectors": f"{example_vectors}",
         "dimA": 2,
         "dimB": 2,
-        "singularValueTolerance": 1e-10,
-        "linearDependenceTolerance": 1e-10,
+        "singularValueTolerance": "1e-10",
+        "linearDependenceTolerance": "1e-10",
     }
 
     @CLASSICAL_ANALYSIS_LINEARDEPENDENCEINHX_BLP.html_response(
         HTTPStatus.OK,
-        description="Micro frontend of the classical lineardependenceInHX state analysis plugin.",
+        description="lineardependenceInHX plugin UI (GET).",
     )
     @CLASSICAL_ANALYSIS_LINEARDEPENDENCEINHX_BLP.arguments(
         ClassicalStateAnalysisLineardependenceInHXParametersSchema(
@@ -118,12 +112,11 @@ class MicroFrontend(MethodView):
     )
     @CLASSICAL_ANALYSIS_LINEARDEPENDENCEINHX_BLP.require_jwt("jwt", optional=True)
     def get(self, errors):
-        """Return the micro frontend."""
-        return self.render(request.args, errors, False)
+        return self.render(request.args, errors, valid=False)
 
     @CLASSICAL_ANALYSIS_LINEARDEPENDENCEINHX_BLP.html_response(
         HTTPStatus.OK,
-        description="Micro frontend of the classical lineardependenceInHX state analysis plugin.",
+        description="lineardependenceInHX plugin UI (POST).",
     )
     @CLASSICAL_ANALYSIS_LINEARDEPENDENCEINHX_BLP.arguments(
         ClassicalStateAnalysisLineardependenceInHXParametersSchema(
@@ -134,13 +127,13 @@ class MicroFrontend(MethodView):
     )
     @CLASSICAL_ANALYSIS_LINEARDEPENDENCEINHX_BLP.require_jwt("jwt", optional=True)
     def post(self, errors):
-        """Return the micro frontend with prerendered inputs."""
-        return self.render(request.form, errors, not errors)
+        return self.render(request.form, errors, valid=(not errors))
 
     def render(self, data: Mapping, errors: dict, valid: bool):
         plugin = ClassicalStateAnalysisLineardependenceInHX.instance
         if plugin is None:
             abort(HTTPStatus.INTERNAL_SERVER_ERROR)
+
         schema = ClassicalStateAnalysisLineardependenceInHXParametersSchema()
         result = None
         task_id = data.get("task_id")
@@ -148,6 +141,7 @@ class MicroFrontend(MethodView):
             task = ProcessingTask.get_by_id(task_id)
             if task:
                 result = task.result
+
         return Response(
             render_template(
                 "simple_template.html",
@@ -161,7 +155,7 @@ class MicroFrontend(MethodView):
                 process=url_for(
                     f"{CLASSICAL_ANALYSIS_LINEARDEPENDENCEINHX_BLP.name}.ProcessView"
                 ),
-                help_text="Provide two vectors and a tolerance to check their lineardependenceInHX.",
+                help_text="Enter vectors with dimA/dimB or provide a circuit descriptor. Checks linear dependence in Hx.",
                 example_values=url_for(
                     f"{CLASSICAL_ANALYSIS_LINEARDEPENDENCEINHX_BLP.name}.MicroFrontend",
                     **self.example_inputs,
@@ -172,18 +166,19 @@ class MicroFrontend(MethodView):
 
 @CLASSICAL_ANALYSIS_LINEARDEPENDENCEINHX_BLP.route("/process/")
 class ProcessView(MethodView):
-    """Start a long running processing task."""
+    """
+    Starts the lineardependenceInHX analysis.
+    """
 
     @CLASSICAL_ANALYSIS_LINEARDEPENDENCEINHX_BLP.arguments(
         ClassicalStateAnalysisLineardependenceInHXParametersSchema(unknown=EXCLUDE),
         location="form",
     )
     @CLASSICAL_ANALYSIS_LINEARDEPENDENCEINHX_BLP.response(HTTPStatus.SEE_OTHER)
-    @CLASSICAL_ANALYSIS_LINEARDEPENDENCEINHX_BLP.require_jwt("jwt", optional=True)
     def post(self, arguments):
-        """Start the lineardependenceInHX analysis task."""
         db_task = ProcessingTask(
-            task_name=lineardependenceInHX_task.name, parameters=dumps(arguments)
+            task_name=lineardependenceInHX_task.name,
+            parameters=dumps(arguments),
         )
         db_task.save(commit=True)
 
@@ -196,7 +191,6 @@ class ProcessView(MethodView):
 
         db_task.save(commit=True)
 
-        # Redirect to the task view
         return redirect(
             url_for("tasks-api.TaskView", task_id=str(db_task.id)), HTTPStatus.SEE_OTHER
         )

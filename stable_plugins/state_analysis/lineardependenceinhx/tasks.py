@@ -1,13 +1,14 @@
 import json
 from json import loads
 from tempfile import SpooledTemporaryFile
-from typing import Optional
 
 import numpy as np
 from celery.utils.log import get_task_logger
 from common.algorithms import analyze_lineardependenceinhx
+from common.encoding_registry import EncodingRegistry
 from qhana_plugin_runner.celery import CELERY
 from qhana_plugin_runner.db.models.tasks import ProcessingTask
+from qhana_plugin_runner.requests import open_url
 from qhana_plugin_runner.storage import STORE
 
 from . import ClassicalStateAnalysisLineardependenceInHX
@@ -20,98 +21,90 @@ TASK_LOGGER = get_task_logger(__name__)
     bind=True,
 )
 def lineardependenceInHX_task(self, db_id: int) -> str:
+    """
+    Either uses multiple vectors, or .qcd,
+    then analyzes linear dependence in a bipartite space using SVD.
+    """
 
-    TASK_LOGGER.info(f"Starting 'lineardependenceInHX' task with database ID '{db_id}'.")
+    TASK_LOGGER.info(f"Starting 'lineardependenceInHX' task for db_id={db_id}")
 
-    # Load task data
     task_data = ProcessingTask.get_by_id(id_=db_id)
     if not task_data:
-        msg = f"Task data with ID {db_id} could not be loaded!"
+        msg = f"No task data found for ID {db_id}"
         TASK_LOGGER.error(msg)
         raise KeyError(msg)
 
-    # Extract parameters and log them
-    parameters = loads(task_data.parameters or "{}")
-    TASK_LOGGER.info(f"Extracted parameters: {parameters}")
+    params = loads(task_data.parameters or "{}")
+    TASK_LOGGER.info(f"Parameters: {params}")
 
-    vectors = parameters.get("vectors", [])
-    dim_A = parameters.get("dimA")
-    dim_B = parameters.get("dimB")
-    singular_value_tolerance = parameters.get("singular_value_tolerance")
-    linear_independence_tolerance = parameters.get("linear_independence_tolerance")
+    vectors = params.get("vectors")
+    dimA = params.get("dimA")
+    dimB = params.get("dimB")
+    sv_tol = params.get("singularValueTolerance") or 1e-10
+    lin_tol = params.get("linearDependenceTolerance") or 1e-10
 
-    TASK_LOGGER.info(
-        f"Input parameters before transformation: vectors={vectors}, dim_A={dim_A}, dim_B={dim_B}, singular_value_tolerance={singular_value_tolerance}, linear_independence_tolerance={linear_independence_tolerance}"
-    )
-
-    # Transform input vectors into NumPy arrays of complex numbers
-    new_set_of_vectors = []
-    try:
-        for vector in vectors:
-            complex_numbers = []
-            for pair in vector:
-                complex_number = complex(pair[0], pair[1])
-                complex_numbers.append(complex_number)
-            np_vector = np.array(complex_numbers)
-            new_set_of_vectors.append(np_vector)
-
-        TASK_LOGGER.info(f"Transformed vectors: {new_set_of_vectors}")
-
-    except Exception as e:
-        TASK_LOGGER.error(f"Error while transforming input vectors: {e}")
-        raise
+    circuit_url = params.get("circuit")
+    prob_tol = params.get("probability_tolerance") or 1e-5
 
     try:
-        # Log and call the function to analyze linear dependence in HX
-        TASK_LOGGER.info(
-            "Invoking 'analyze_lineardependenceinhx' with parameters: "
-            f"vectors={new_set_of_vectors}, dim_A={dim_A}, dim_B={dim_B}, singular_value_tolerance={singular_value_tolerance}, linear_independence_tolerance={linear_independence_tolerance}"
-        )
+        if vectors is not None:
+            # CASE A: direct vectors
+            python_vectors = []
+            for vec in vectors:
+                arr = np.array([complex(r, i) for (r, i) in vec])
+                python_vectors.append(arr)
 
-        result = analyze_lineardependenceinhx(
-            states=new_set_of_vectors,
-            dim_A=dim_A,
-            dim_B=dim_B,
-            singular_value_tolerance=singular_value_tolerance,
-            linear_independence_tolerance=linear_independence_tolerance,
-        )
-
-        TASK_LOGGER.info(f"Result of linear dependence in HX analysis: {result}")
-
-        # JSON Output
-        output_data = {
-            "result": bool(result),  # Explizit in JSON-kompatiblen Typ umwandeln
-        }
-
-        # Save the result as a TXT file
-        with SpooledTemporaryFile(mode="w") as txt_file:
-            txt_file.write(str(output_data))  # output_data als String speichern
-            txt_file.seek(0)  # Reset the file pointer for reading
-            STORE.persist_task_result(
-                db_id,
-                txt_file,
-                "out.txt",  # File name
-                "custom/lineardependenceinhx-output",  # Data type
-                "text/plain",  # MIME type
+            result_bool = analyze_lineardependenceinhx(
+                states=python_vectors,
+                dim_A=dimA,
+                dim_B=dimB,
+                singular_value_tolerance=sv_tol,
+                linear_independence_tolerance=lin_tol,
             )
 
-        # Save the result as a JSON file
+        elif circuit_url is not None:
+            # CASE B: decode from circuit
+            with open_url(circuit_url) as resp:
+                qcd_content = resp.text
+            qcd_data = json.loads(qcd_content)
+            qasm_code = qcd_data["circuit"]
+            divisions = qcd_data["metadata"]["circuit_divisions"]
+            strategy_id = qcd_data["metadata"]["strategy_id"]
+
+            strategy = EncodingRegistry.get_strategy(strategy_id)
+            decoded = strategy.decode(
+                qasm_code, divisions, options={"probability_tolerance": prob_tol}
+            )
+
+            if not decoded:
+                raise ValueError("Decoded no vectors from the circuit descriptor.")
+            result_bool = analyze_lineardependenceinhx(
+                states=[np.array(vec, dtype=complex) for vec in decoded],
+                dim_A=dimA,
+                dim_B=dimB,
+                singular_value_tolerance=sv_tol,
+                linear_independence_tolerance=lin_tol,
+            )
+        else:
+            raise ValueError("No valid input provided for lineardependenceInHX plugin.")
+
+        output_data = {"result": bool(result_bool)}
+
+        # Save
         with SpooledTemporaryFile(mode="w") as json_file:
-            json.dump(output_data, json_file)  # Schreibe das JSON in die Datei
-            json_file.seek(0)  # Reset the file pointer for reading
+            json.dump(output_data, json_file)
+            json_file.seek(0)
             STORE.persist_task_result(
                 db_id,
                 json_file,
-                "out.json",  # File name
-                "custom/lineardependenceinhx-output",  # Data type
-                "application/json",  # MIME type
+                "out.json",
+                "custom/lineardependenceInHX-output",
+                "application/json",
             )
 
-        TASK_LOGGER.info(f"Results successfully saved for task ID {db_id}.")
-
-        # Return JSON data
-        return json.dumps(output_data)  # Rückgabe des JSON-Strings
+        TASK_LOGGER.info(f"lineardependenceInHX result: {output_data}")
+        return json.dumps(output_data)
 
     except Exception as e:
-        TASK_LOGGER.error(f"Error during 'lineardependenceInHX' task execution: {e}")
+        TASK_LOGGER.error(f"Error in lineardependenceInHX task: {e}")
         raise
