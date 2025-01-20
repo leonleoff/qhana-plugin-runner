@@ -33,7 +33,7 @@ def vector_encoding_task(self, db_id: int) -> str:
     # Lade die Parameter
     parameters = loads(task_data.parameters or "{}")
     vectors = parameters.get("vectors", [])  # an array of arrays of [re,im] ?
-
+    strategy_id = parameters.get("attribute_filter_strategy")
     # Wandle in Python-Complex-Listen um
     # Sofern noch nicht komplex:
     python_vectors = []
@@ -48,8 +48,6 @@ def vector_encoding_task(self, db_id: int) -> str:
     TASK_LOGGER.info(f"Encoding {len(python_vectors)} vectors...")
 
     # Rufe encoding auf
-
-    strategy_id = "split_complex_binary_encoding"
     strategy = EncodingRegistry.get_strategy(strategy_id)
 
     qasm_code, circuit_borders = strategy.encode(python_vectors, None)
