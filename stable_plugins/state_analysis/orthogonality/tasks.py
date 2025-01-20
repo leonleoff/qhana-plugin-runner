@@ -8,6 +8,7 @@ import numpy as np
 from celery.utils.log import get_task_logger
 from qhana_plugin_runner.celery import CELERY
 from qhana_plugin_runner.db.models.tasks import ProcessingTask
+from qhana_plugin_runner.requests import get_mimetype, open_url
 from qhana_plugin_runner.storage import STORE
 
 # qiskit imports (make sure qiskit is installed!)
@@ -130,18 +131,16 @@ def orthogonality_task(self, db_id: int) -> str:
             vec1, vec2 = new_set_of_vectors
 
         elif circuit is not None:
-            # we have a circuit URL -> read from store
-            # the stored file is in text/x-qasm but actually JSON with { "qasm_code", "circuitBorders" }
-            # let's fetch it
-            # 1) we can open it with STORE.open()
-            with STORE.open(circuit, mode="r") as f:
-                content = f.read()
-            # parse the JSON
+            # Fetch the circuit data using open_url
+            with open_url(circuit) as circuit_response:
+                content = circuit_response.text
+
+            # Parse the JSON content
             circuit_json = json.loads(content)
             qasm_code = circuit_json["qasm_code"]
             circuit_borders = circuit_json["circuitBorders"]
 
-            # decode => returns a list of vectors
+            # Decode the vectors
             decoded_vectors = decode_binary_to_vectors_from_qasm(
                 qasm_code, circuit_borders, probability_tolerance=prob_tol
             )
@@ -150,6 +149,7 @@ def orthogonality_task(self, db_id: int) -> str:
                 raise ValueError(
                     "Circuit must decode exactly two vectors for orthogonality check!"
                 )
+
             vec1 = np.array(decoded_vectors[0])
             vec2 = np.array(decoded_vectors[1])
         else:
