@@ -3,9 +3,8 @@ from json import dumps
 from typing import Mapping
 
 from celery.canvas import chain
-from flask import Response, abort, redirect, request
+from flask import Response, abort, redirect, render_template, request
 from flask.helpers import url_for
-from flask.templating import render_template
 from flask.views import MethodView
 from marshmallow import EXCLUDE
 from qhana_plugin_runner.api.plugin_schemas import (
@@ -25,11 +24,10 @@ from .tasks import pairwise_orthogonality_task
 
 @PAIRWISE_ORTHOGONALITY_BLP.route("/")
 class PluginsView(MethodView):
-    """Plugins collection resource for pairwise-orthogonality."""
+    """Returns plugin metadata for pairwise orthogonality checks."""
 
     @PAIRWISE_ORTHOGONALITY_BLP.response(HTTPStatus.OK, PluginMetadataSchema())
     def get(self):
-        """Return the plugin metadata."""
         plugin = ClassicalStateAnalysisPairwiseOrthogonality.instance
         if plugin is None:
             abort(HTTPStatus.INTERNAL_SERVER_ERROR)
@@ -65,9 +63,10 @@ class PluginsView(MethodView):
 
 @PAIRWISE_ORTHOGONALITY_BLP.route("/ui/")
 class MicroFrontend(MethodView):
-    """Micro frontend for pairwise-orthogonality."""
+    """
+    A simple UI for checking pairwise orthogonality. Also supports circuit input now.
+    """
 
-    # Beispiel-Eingaben
     vectors_example = [
         [[1.0, 0.0], [0.0, 0.0]],
         [[0.0, 0.0], [1.0, 0.0]],
@@ -79,8 +78,7 @@ class MicroFrontend(MethodView):
     }
 
     @PAIRWISE_ORTHOGONALITY_BLP.html_response(
-        HTTPStatus.OK,
-        description="Micro frontend of the pairwise-orthogonality plugin.",
+        HTTPStatus.OK, description="Pairwise orthogonality plugin UI (GET)."
     )
     @PAIRWISE_ORTHOGONALITY_BLP.arguments(
         PairwiseOrthogonalityParametersSchema(
@@ -90,12 +88,10 @@ class MicroFrontend(MethodView):
         required=False,
     )
     def get(self, errors):
-        """Return the micro frontend (GET)."""
         return self.render(request.args, errors, valid=False)
 
     @PAIRWISE_ORTHOGONALITY_BLP.html_response(
-        HTTPStatus.OK,
-        description="Micro frontend of the pairwise-orthogonality plugin.",
+        HTTPStatus.OK, description="Pairwise orthogonality plugin UI (POST)."
     )
     @PAIRWISE_ORTHOGONALITY_BLP.arguments(
         PairwiseOrthogonalityParametersSchema(
@@ -105,7 +101,6 @@ class MicroFrontend(MethodView):
         required=False,
     )
     def post(self, errors):
-        """Return the micro frontend with prerendered inputs (POST)."""
         return self.render(request.form, errors, valid=(not errors))
 
     def render(self, data: Mapping, errors: dict, valid: bool):
@@ -132,7 +127,7 @@ class MicroFrontend(MethodView):
                 errors=errors,
                 result=result,
                 process=url_for(f"{PAIRWISE_ORTHOGONALITY_BLP.name}.ProcessView"),
-                help_text="Check if all vectors are pairwise orthogonal. Returns True or False.",
+                help_text="Check if all vectors are pairwise orthogonal or decode from circuit. True if all pairs orthogonal.",
                 example_values=url_for(
                     f"{PAIRWISE_ORTHOGONALITY_BLP.name}.MicroFrontend",
                     **self.example_inputs,
@@ -143,7 +138,9 @@ class MicroFrontend(MethodView):
 
 @PAIRWISE_ORTHOGONALITY_BLP.route("/process/")
 class ProcessView(MethodView):
-    """Start a long running processing task."""
+    """
+    Starts the pairwise orthogonality task.
+    """
 
     @PAIRWISE_ORTHOGONALITY_BLP.arguments(
         PairwiseOrthogonalityParametersSchema(unknown=EXCLUDE),
@@ -151,15 +148,12 @@ class ProcessView(MethodView):
     )
     @PAIRWISE_ORTHOGONALITY_BLP.response(HTTPStatus.SEE_OTHER)
     def post(self, arguments):
-        """Start the pairwise-non-orthogonality check task."""
-        from qhana_plugin_runner.db.models.tasks import ProcessingTask
-
         db_task = ProcessingTask(
-            task_name=pairwise_orthogonality_task.name, parameters=dumps(arguments)
+            task_name=pairwise_orthogonality_task.name,
+            parameters=dumps(arguments),
         )
         db_task.save(commit=True)
 
-        # Verkette Tasks (falls benötigt), hier aber nur eine
         task_chain = pairwise_orthogonality_task.s(db_id=db_task.id) | save_task_result.s(
             db_id=db_task.id
         )

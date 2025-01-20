@@ -11,7 +11,7 @@ _identifier = plugin_identifier(_plugin_name, __version__)
 PAIRWISE_ORTHOGONALITY_BLP = SecurityBlueprint(
     _identifier,
     __name__,
-    description="Pairwise Orthogonality plugin API.",
+    description="Checks if all vectors in a set are pairwise orthogonal.",
     template_folder="templates",
 )
 
@@ -19,7 +19,7 @@ PAIRWISE_ORTHOGONALITY_BLP = SecurityBlueprint(
 class ClassicalStateAnalysisPairwiseOrthogonality(QHAnaPluginBase):
     name = _plugin_name
     version = __version__
-    description = "Checks whether all vectors in a set are pairwise orthogonal or not."
+    description = "Checks whether all vectors in a set are pairwise orthogonal."
     tags = ["classical-state-analysis", "pairwise-orthogonality"]
 
     def __init__(self, app: Optional[Flask]) -> None:
@@ -30,7 +30,6 @@ class ClassicalStateAnalysisPairwiseOrthogonality(QHAnaPluginBase):
 
 
 try:
-    # Routen erst importieren, nachdem das Blueprint definiert wurde
     from . import routes
 except ImportError:
     pass
