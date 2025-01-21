@@ -22,7 +22,7 @@ class ClassicalStateAnalysisLineardependenceInHXParametersSchema(FrontendFormBas
         required=True,
         metadata={
             "label": "Dim A",
-            "description": "Dimension of subsystem A (only if vectors used).",
+            "description": "Dimension of subsystem A.",
             "input_type": "number",
         },
     )
@@ -31,7 +31,7 @@ class ClassicalStateAnalysisLineardependenceInHXParametersSchema(FrontendFormBas
         required=True,
         metadata={
             "label": "Dim B",
-            "description": "Dimension of subsystem B (only if vectors used).",
+            "description": "Dimension of subsystem B.",
             "input_type": "number",
         },
     )
@@ -84,9 +84,13 @@ class ClassicalStateAnalysisLineardependenceInHXParametersSchema(FrontendFormBas
         if data.get("probability_tolerance") in ("", None):
             data["probability_tolerance"] = None
 
-        # If circuit => ignore vectors, dimA, dimB. If vectors => require dimA, dimB
+        # If circuit => ignore vectors If vectors => ignore circuit
         vectors = data.get("vectors")
         circuit = data.get("circuit")
+
+        # Must ensure dimA, dimB are set
+        if data.get("dimA") is None or data.get("dimB") is None:
+            raise ValueError("dimA and dimB are required.")
 
         if vectors and circuit:
             raise ValueError("Either 'vectors' or 'circuit' can be provided, not both.")
@@ -94,13 +98,11 @@ class ClassicalStateAnalysisLineardependenceInHXParametersSchema(FrontendFormBas
             raise ValueError("Must provide either 'vectors' or 'circuit' input.")
 
         if vectors:
-            # Must ensure dimA, dimB are set
-            if data.get("dimA") is None or data.get("dimB") is None:
-                raise ValueError("dimA and dimB are required if vectors are given.")
             # circuit-based fields not used
             data["circuit"] = None
             data["probability_tolerance"] = None
         else:
+
             # circuit => ignore vectors
             data["vectors"] = None
 

@@ -9,7 +9,7 @@ class ClassicalStateAnalysisSchmidtrankParametersSchema(FrontendFormBaseSchema):
     """
     Validates either:
       - one vector (COMPLEXVECTOR) plus dimA, dimB,
-      - or a circuit descriptor (.qcd) from which we decode exactly one vector.
+      - or a circuit descriptor (.qcd) plus dimA, dimB from which we decode exactly one vector.
     """
 
     vector = COMPLEXVECTOR(
@@ -25,7 +25,7 @@ class ClassicalStateAnalysisSchmidtrankParametersSchema(FrontendFormBaseSchema):
         required=True,
         metadata={
             "label": "Dim A",
-            "description": "Dimension of subsystem A if using direct vector.",
+            "description": "Dimension of subsystem A.",
             "input_type": "number",
         },
     )
@@ -34,7 +34,7 @@ class ClassicalStateAnalysisSchmidtrankParametersSchema(FrontendFormBaseSchema):
         required=True,
         metadata={
             "label": "Dim B",
-            "description": "Dimension of subsystem B if using direct vector.",
+            "description": "Dimension of subsystem B.",
             "input_type": "number",
         },
     )
@@ -79,15 +79,16 @@ class ClassicalStateAnalysisSchmidtrankParametersSchema(FrontendFormBaseSchema):
         vector = data.get("vector")
         circuit = data.get("circuit")
 
+        if data.get("dimA") is None or data.get("dimB") is None:
+            raise ValueError("dimA and dimB are required.")
+
         if vector and circuit:
             raise ValueError("Either 'vector' or 'circuit' can be provided, not both.")
         if not vector and not circuit:
             raise ValueError("Must provide either 'vector' or 'circuit' input.")
 
-        # If vector => must have dimA, dimB
         if vector:
-            if data.get("dimA") is None or data.get("dimB") is None:
-                raise ValueError("dimA and dimB are required if 'vector' is given.")
+
             data["circuit"] = None
             data["probability_tolerance"] = None
         else:

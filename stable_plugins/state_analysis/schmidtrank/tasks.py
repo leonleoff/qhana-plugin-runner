@@ -18,18 +18,22 @@ TASK_LOGGER = get_task_logger(__name__)
 
 
 def validate_decoded(decoded):
+    # Check if decoded is directly the desired vector
+    if isinstance(decoded, list) and all(
+        isinstance(element, complex) for element in decoded
+    ):
+        return decoded
 
-    if not isinstance(decoded, list):
-        raise ValueError("Decoded data must be a list.")
+    # Check if decoded is a list with one element that is the desired vector
+    if isinstance(decoded, list) and len(decoded) == 1 and isinstance(decoded[0], list):
+        inner_list = decoded[0]
+        if all(isinstance(element, complex) for element in inner_list):
+            return inner_list
 
-    if all(isinstance(element, complex) for element in decoded):
-        return True
-    elif all(isinstance(element, list) for element in decoded):
-        raise ValueError("Decoded data cannot be a list of lists.")
-    else:
-        raise ValueError(
-            "Decoded data must be either a list of complex numbers or a list of lists."
-        )
+    # Raise an error if neither condition is met
+    raise ValueError(
+        f"Decoded data must be either a vector or a list containing exactly one vector. decoded={decoded}"
+    )
 
 
 @CELERY.task(
@@ -84,13 +88,13 @@ def schmidtrank_task(self, db_id: int) -> str:
             )
             TASK_LOGGER.info(f"decoded: {decoded}")
 
-            validate_decoded(decoded)
+            vector = validate_decoded(decoded)
 
             if not decoded:
                 raise ValueError("Decoded no vectors from the circuit descriptor.")
 
             result_int = compute_schmidt_rank(
-                np.array(decoded, dtype=complex), dimA, dimB, tolerance
+                np.array(vector, dtype=complex), dimA, dimB, tolerance
             )
 
         else:
