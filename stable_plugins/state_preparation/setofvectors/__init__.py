@@ -22,29 +22,27 @@ _plugin_name = "filesMaker"
 __version__ = "v0.0.1"
 _identifier = plugin_identifier(_plugin_name, __version__)
 
-ENCODING_BLP = SecurityBlueprint(
+FILES_BLP = SecurityBlueprint(
     _identifier,
     __name__,
-    description="A plugin that encodes a list of vectors into a QASM circuit (QuantumCircuitDescriptor).",
+    description="A plugin that takes two text inputs (QASM code and metadata) and stores them as files.",
     template_folder="templates",
 )
 
 
-class VectorEncodingPlugin(QHAnaPluginBase):
-    """QHAna plugin that encodes one or more complex vectors into QASM."""
+class FilesMakerPlugin(QHAnaPluginBase):
+    """QHAna plugin that stores two text fields (QASM + metadata) into files."""
 
     name = _plugin_name
     version = __version__
-    description = (
-        "Encodes a list of complex vectors into QASM code, storing circuit + metadata."
-    )
-    tags = ["state-preparation", "demo", "encoding"]
+    description = "Stores QASM code and metadata in separate files."
+    tags = ["files", "demo"]
 
     def __init__(self, app: Optional[Flask]) -> None:
         super().__init__(app)
 
     def get_api_blueprint(self):
-        return ENCODING_BLP
+        return FILES_BLP
 
 
 try:
