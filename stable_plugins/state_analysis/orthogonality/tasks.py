@@ -7,7 +7,7 @@ from typing import Optional
 import numpy as np
 from celery.utils.log import get_task_logger
 from common.algorithms import are_vectors_orthogonal
-from common.encoding_registry import EncodingRegistry
+from common.qiskit_handler import toNpVector
 from qhana_plugin_runner.celery import CELERY
 from qhana_plugin_runner.db.models.tasks import ProcessingTask
 from qhana_plugin_runner.requests import open_url
@@ -61,23 +61,15 @@ def orthogonality_task(self, db_id: int) -> str:
         elif circuit_url is not None:
             # CASE B: Circuit descriptor
             with open_url(circuit_url) as resp:
-                qcd_content = resp.text
+                qasm_code = resp.text
 
-            qcd_data = json.loads(qcd_content)
-            qasm_code = qcd_data["circuit"]
-            metadata = qcd_data["metadata"]
-            strategy_id = metadata["strategy_id"]
-            circuit_divisions = metadata["circuit_divisions"]
+            statevector = toNpVector(qasm_code)
 
-            strategy = EncodingRegistry.get_strategy(strategy_id)
-            decode_options = {"probability_tolerance": prob_tol}
-            decoded_vectors = strategy.decode(
-                qasm_code, circuit_divisions, decode_options
-            )
-
-            if len(decoded_vectors) != 2:
+            if len(statevector) != 2:
                 raise ValueError("Decoded data must contain exactly two vectors.")
 
+            # TODO Finish here
+            decoded_vectors = []
             vec1 = np.array(decoded_vectors[0])
             vec2 = np.array(decoded_vectors[1])
 
