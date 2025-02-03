@@ -1,8 +1,8 @@
 from enum import Enum
 from typing import Dict, List, Type
 
-from .encoding import SplitComplexBinaryEncoding
 from .encoding_strategy import EncodingStrategy
+from .split_complex_binary_encoding import SplitComplexBinaryEncoding
 
 
 class EncodingRegistry:

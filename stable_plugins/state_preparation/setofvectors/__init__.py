@@ -18,7 +18,7 @@ from flask import Flask
 from qhana_plugin_runner.api.util import SecurityBlueprint
 from qhana_plugin_runner.util.plugins import QHAnaPluginBase, plugin_identifier
 
-_plugin_name = "vectorEncoding_classical"
+_plugin_name = "filesMaker"
 __version__ = "v0.0.1"
 _identifier = plugin_identifier(_plugin_name, __version__)
 
