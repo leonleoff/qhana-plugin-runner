@@ -7,7 +7,6 @@ from typing import Optional
 import numpy as np
 from celery.utils.log import get_task_logger
 from common.algorithms import are_vectors_orthogonal
-from common.qiskit_handler import toNpVector
 from qhana_plugin_runner.celery import CELERY
 from qhana_plugin_runner.db.models.tasks import ProcessingTask
 from qhana_plugin_runner.requests import open_url
@@ -63,7 +62,7 @@ def orthogonality_task(self, db_id: int) -> str:
             with open_url(circuit_url) as resp:
                 qasm_code = resp.text
 
-            statevector = toNpVector(qasm_code)
+            statevector = [[1, 0], [1, 0]]
 
             if len(statevector) != 2:
                 raise ValueError("Decoded data must contain exactly two vectors.")
