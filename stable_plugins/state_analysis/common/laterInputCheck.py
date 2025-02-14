@@ -1,0 +1,78 @@
+# cuircuit cutter
+checks = [
+    {
+        "id": 6,
+        "qasmfilecontent": """
+        OPENQASM 2.0;
+        include "qelib1.inc";
+        qreg q[4];
+        x q[3];
+        """,
+        "metadata": [[0, "0"]],
+        "expected": [
+            [
+                1 + 0j,
+                0 + 0j,
+            ],
+        ],
+        "throws": True,
+    },
+    {
+        "id": 7,
+        "qasmfilecontent": """
+        OPENQASM 2.0;
+        include "qelib1.inc";
+        qreg q[4];
+        x q[3];
+        """,
+        "metadata": [[0, 6]],
+        "expected": [
+            [
+                1 + 0j,
+                0 + 0j,
+            ],
+        ],
+        "throws": True,
+    },
+    {
+        "id": 8,
+        "qasmfilecontent": """
+        OPENQASM 2.0;
+        include "qelib1.inc";
+        qreg q[4];
+        x q[3];
+        """,
+        "metadata": [[-0, 0]],
+        "expected": [
+            [
+                1 + 0j,
+                0 + 0j,
+            ],
+        ],
+        "throws": True,
+    },
+]
+
+
+# Validate input intervals aber last index gibt es nicht mehr
+previous_upper_bound = -1
+for idx, (start, end) in enumerate(qubit_intervals):
+    if not (isinstance(start, int) and isinstance(end, int)):
+        raise ValueError(
+            f"Interval {idx} is invalid: [{start}, {end}] - both values must be integers."
+        )
+    if start < 0:
+        raise ValueError(f"Interval {idx} has a negative lower bound: {start}.")
+    if start < previous_upper_bound:
+        raise ValueError(
+            f"Interval {idx} starts at {start}, which overlaps with the previous interval ending at {previous_upper_bound}."
+        )
+    if start > end:
+        raise ValueError(
+            f"Interval {idx} is invalid: [{start}, {end}] - start must be ≤ end."
+        )
+    if end > last_qubit_index:
+        raise ValueError(
+            f"Interval {idx} ends at {end}, which exceeds the last qubit index ({last_qubit_index})."
+        )
+    previous_upper_bound = end  # Update for next iteration
